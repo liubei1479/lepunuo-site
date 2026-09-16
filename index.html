@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEPUNUO — Women's Fashion | Dresses, Pants, Tops</title>
+<meta name="description" content="Shop Lepunuo women's dresses, pants, tops, skirts and more. Free shipping on orders over $49 — checkout securely on Amazon.">
+<meta property="og:title" content="LEPUNUO — Women's Fashion">
+<meta property="og:description" content="Shop Lepunuo women's fashion. Browse the collection and buy securely on Amazon.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='3' fill='%23111111'/><text x='32' y='45' font-size='34' font-weight='700' text-anchor='middle' fill='white' font-family='Arial'>L</text></svg>">
+<link rel="preconnect" href="https://m.media-amazon.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Announcement marquee (top) -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span>30-Day Hassle-Free Returns</span>
+    <span>Secure Checkout on Amazon</span>
+    <span>New Arrivals · Updated Weekly</span>
+    <span>Effortless Style · Shop the Collection</span>
+    <span>30-Day Hassle-Free Returns</span>
+    <span>Secure Checkout on Amazon</span>
+    <span>New Arrivals · Updated Weekly</span>
+    <span>Effortless Style · Shop the Collection</span>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header__row">
+    <button id="menuBtn" class="menu-btn" aria-label="Menu">☰</button>
+    <a class="brand" href="./">
+      <span class="brand__logo">LEPUNUO</span>
+    </a>
+    <div class="header__actions">
+      <div class="search">
+        <input id="searchInput" class="search__input" type="search" placeholder="Search…" autocomplete="off">
+        <div id="searchSug" class="search__sug" hidden></div>
+      </div>
+    </div>
+  </div>
+  <nav id="nav" class="nav" aria-label="Categories"></nav>
+</header>
+
+<!-- Hero product showcase -->
+<section class="hero" id="hero">
+  <div id="heroSlides" class="hero__slides"></div>
+  <div class="hero__dots" id="heroDots"></div>
+</section>
+
+<!-- Best Sellers -->
+<section id="section-best" class="block block--alt">
+  <div class="rowhead">
+    <h2 class="sec__title">BEST SELLERS</h2>
+    <div class="carow__btns" data-carousel="bestsellers">
+      <button class="carow__btn" data-dir="prev" aria-label="Previous">‹</button>
+      <button class="carow__btn" data-dir="next" aria-label="Next">›</button>
+    </div>
+  </div>
+  <div id="bestsellers" class="carow"></div>
+  <div class="block__more"><a class="btn btn--dark" href="#section-grid">View All</a></div>
+</section>
+
+<!-- New Arrivals -->
+<section id="section-new" class="block">
+  <div class="rowhead">
+    <h2 class="sec__title">NEW ARRIVALS</h2>
+    <div class="carow__btns" data-carousel="newArrivals">
+      <button class="carow__btn" data-dir="prev" aria-label="Previous">‹</button>
+      <button class="carow__btn" data-dir="next" aria-label="Next">›</button>
+    </div>
+  </div>
+  <div id="newArrivals" class="carow"></div>
+  <div class="block__more"><a class="btn btn--dark" href="#section-grid">View All</a></div>
+</section>
+
+<!-- Featured collections by category -->
+<section id="section-collections" class="block">
+  <div id="collections"></div>
+</section>
+
+<!-- Full collection grouped by category -->
+<section id="section-grid" class="block">
+  <h2 class="sec__title">SHOP ALL PRODUCTS</h2>
+  <div class="toolbar">
+    <span id="countLabel" class="toolbar__count"></span>
+    <select id="sortSelect" class="select" aria-label="Sort">
+      <option value="featured">Featured</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+      <option value="name">Name A–Z</option>
+    </select>
+  </div>
+  <div id="catGroups"></div>
+  <p id="empty" class="empty" hidden>No styles match your search.</p>
+</section>
+
+<!-- Customer reviews -->
+<section id="section-reviews" class="block">
+  <h2 class="sec__title">CUSTOMER REVIEWS</h2>
+  <div id="reviews" class="reviews__in"></div>
+</section>
+
+<!-- Instagram -->
+<section class="ig">
+  <h2 class="sec__title">Find Us On Instagram</h2>
+  <a class="ig__handle" href="https://www.instagram.com/lepunuo.shop" target="_blank" rel="noopener">@lepunuo.shop</a>
+  <div id="igGrid" class="ig__grid"></div>
+</section>
+
+<!-- Trust Bar (prettygarden bottom strip) -->
+<section class="trustbar">
+  <div class="trustbar__in">
+    <div class="trustbar__item">
+      <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      Free Shipping $49+
+    </div>
+    <div class="trustbar__item">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      Buy 2 Get 20% Off
+    </div>
+    <div class="trustbar__item">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      Free 30 Day Returns
+    </div>
+    <div class="trustbar__item">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+      Secure Payment
+    </div>
+  </div>
+</section>
+
+<!-- Newsletter -->
+<section class="news">
+  <h2 class="news__title">Sign Up And Save</h2>
+  <p class="news__sub">Subscribe &amp; claim your 25% welcome code</p>
+  <form id="newsForm" class="news__form">
+    <input id="newsEmail" class="news__input" type="email" placeholder="Enter your email address" required>
+    <button class="btn btn--dark" type="submit">Join</button>
+  </form>
+  <p id="newsOk" class="news__ok" hidden>Thanks — check your inbox for your code!</p>
+</section>
+
+<!-- Announcement marquee (bottom) -->
+<div class="marquee marquee--foot" aria-hidden="true">
+  <div class="marquee__track">
+    <span>FREE SHIPPING On U.S. Orders Over $49+</span>
+    <span>BUY 2 GET 20% OFF</span>
+    <span>Hassle Free 30 Day Returns</span>
+    <span>Secure Payment</span>
+    <span>FREE SHIPPING On U.S. Orders Over $49+</span>
+    <span>BUY 2 GET 20% OFF</span>
+    <span>Hassle Free 30 Day Returns</span>
+    <span>Secure Payment</span>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="foot">
+  <div class="foot__in">
+    <div class="foot__col">
+      <span class="foot__brand">LEPUNUO</span>
+      <p class="foot__about">Everyday women's fashion — dresses, pants, tops and more. All orders ship and are fulfilled by Amazon.</p>
+    </div>
+    <div class="foot__col">
+      <h4>Shop</h4>
+      <div id="footNav" class="foot__links"></div>
+    </div>
+    <div class="foot__col">
+      <h4>Support</h4>
+      <div class="foot__links" id="supportLinks">
+        <a href="#section-grid">Size Guide</a>
+        <a href="#section-reviews">Reviews</a>
+        <a href="#section-grid">Returns</a>
+        <a href="#section-grid">Shipping</a>
+      </div>
+    </div>
+    <div class="foot__col">
+      <h4>Customer Care</h4>
+      <div class="foot__links">
+        <a href="mailto:service@lepunuo.com">Contact Us</a>
+        <a href="#section-reviews">Affiliate Program</a>
+        <a href="#section-grid">Wholesale</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot__bar">
+    <p>All purchases are completed securely on Amazon.com. Prices shown are a guide — final price, shipping and availability are confirmed at checkout on Amazon.</p>
+    <p>© <span id="year"></span> LEPUNUO. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="data/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
