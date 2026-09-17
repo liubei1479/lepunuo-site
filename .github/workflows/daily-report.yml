@@ -2,8 +2,8 @@ name: Daily report & alert
 
 on:
   schedule:
-    # 北京时间 08:30（UTC 00:30）
-    - cron: "30 0 * * *"
+    # 北京时间 10:00（UTC 02:00）
+    - cron: "0 2 * * *"
   workflow_dispatch: {}
 
 permissions:
