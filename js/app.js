@@ -1,4 +1,4 @@
-/* LEPUNUO — site logic: hero fade banners, category tiles, rows, grid, reviews, instagram */
+/* LEPUNUO — site logic: hero banners, nav, carousels, grid, search suggestions, reviews, instagram */
 
 (function () {
   "use strict";
@@ -16,6 +16,8 @@
   var reviewsEl = document.getElementById("reviews");
   var igEl = document.getElementById("igGrid");
   var footNavEl = document.getElementById("footNav");
+  var saleSec = document.getElementById("section-sale");
+  var saleEl = document.getElementById("saleGoods");
 
   var CATS = ["Dress", "Pants", "Top", "Skirt", "Jumpsuit", "Shorts", "Cardigan", "Set", "Jacket"];
 
@@ -37,8 +39,14 @@
       .replace(/"/g, "&quot;");
   }
 
+  /* 亚马逊追踪 tag（可选）：留空则跳转不带 tag 参数。
+     注意：一旦启用 tag 即构成联盟推广，需同时在页脚恢复
+     "As an Amazon Associate we earn from qualifying purchases." 披露声明。 */
+  var AMZ_TAG = "";
+
   function amazonUrl(it) {
-    return "https://www.amazon.com/dp/" + it.asin + "?th=1&psc=1";
+    var q = "?th=1&psc=1" + (AMZ_TAG ? "&tag=" + encodeURIComponent(AMZ_TAG) : "");
+    return "https://www.amazon.com/dp/" + it.asin + q;
   }
 
   /* Upgrade to the un-cropped source image. Amazon "_AC_SLxxxx_" variants
@@ -49,44 +57,19 @@
     return url.replace(/\._AC_SL\d+_\.jpg$/i, ".jpg");
   }
 
+  /* Est. 标注：价格为估算参考值，最终以亚马逊结算为准（合规用途） */
+  /* 主体归一缩放系数：由构建期脚本(白底包围盒)写入 zoom 字段，缺省 1 */
+  function zoomOf(it) {
+    return it.zoom != null ? it.zoom : 1;
+  }
+
+  /* 价格不再展示：Amazon 实时价与我们静态快照必然漂移，
+     为消除"价格不符"的体验落差与误导风险，卡片统一引导去 Amazon 确认价格 */
   function price(it) {
-    if (it.price == null) return '<span class="card__price">On Amazon</span>';
-    var html = '<span class="card__price"><small>From</small> ';
-    /* 划线价 + 折扣角标：数据缺失或不合理时自动降级为单价格 */
-    if (it.oldPrice != null && it.oldPrice > it.price) {
-      html +=
-        '<s class="card__old">$' + it.oldPrice.toFixed(2) + "</s> " +
-        "$" + it.price.toFixed(2) +
-        '<em class="card__sale">-' + salePct(it) + "%</em>";
-    } else {
-      html += "$" + it.price.toFixed(2);
-    }
-    return html + "</span>";
+    return '<span class="card__cta">Check price on Amazon</span>';
   }
 
-  function salePct(it) {
-    return Math.round((1 - it.price / it.oldPrice) * 100);
-  }
-
-  /* 1000+ 评价数缩写：1203 → "1.2k" */
-  function fmtCount(n) {
-    if (n == null) return "";
-    return n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n);
-  }
-
-  /* 评分行：满星按评分四舍五入填充，空星弱化 */
-  function ratingHtml(it) {
-    if (it.rating == null) return "";
-    var filled = Math.round(it.rating), full = "", empty = "";
-    for (var i = 1; i <= 5; i++) { if (i <= filled) { full += "★"; } else { empty += "★"; } }
-    return (
-      '<span class="card__rating" title="Rating ' + it.rating.toFixed(1) + ' out of 5">' +
-        '<span class="card__stars"><span class="card__stars--full">' + full + '</span><span class="card__stars--empty">' + empty + "</span></span>" +
-        '<b>' + it.rating.toFixed(1) + "</b>" +
-        (it.ratingCount != null ? "<i>(" + fmtCount(it.ratingCount) + ")</i>" : "") +
-      "</span>"
-    );
-  }
+  /* 评分不再展示：纯静态站无法获取亚马逊真实评分/评论数，估算数据已于此前移除 */
 
   /* color palette pool for swatch dots (deterministic by variant count) */
   var SWATCH_COLORS = [
@@ -110,22 +93,22 @@
   }
 
   function card(it, badge) {
-    var b = badge ? '<span class="card__badge">' + esc(badge) + "</span>" : "";
+    var b = badge
+      ? '<span class="card__badge">' + esc(badge) + "</span>"
+      : (it.deal ? '<span class="card__badge card__badge--deal">Deal</span>' : "");
     var swatches = swatchDots(it.variants);
     var swHtml = swatches ? '<div class="card__swatches">' + swatches + '</div>' : "";
     return (
       '<a class="card" href="' + amazonUrl(it) + '" target="_blank" rel="noopener nofollow" title="' + esc(it.name) + '">' +
         '<div class="card__imgwrap">' +
-          '<img class="card__img" src="' + hiRes(it.image) + '" alt="' + esc(it.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
+          '<img class="card__img" style="--z:' + zoomOf(it) + '" src="' + hiRes(it.image) + '" alt="' + esc(it.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
           b +
         "</div>" +
         '<div class="card__body">' +
           swHtml +
           '<span class="card__name">' + esc(it.name) + "</span>" +
-          ratingHtml(it) +
           '<div class="card__row">' +
             price(it) +
-            '<span class="card__cta">Shop</span>' +
           "</div>" +
         "</div>" +
       "</a>"
@@ -172,7 +155,7 @@
           img: hiRes(p.image),
           eye: p.category + " · Best Seller",
           title: nameShort(p.name),
-          sub: "From $" + (p.price != null ? p.price.toFixed(2) : "—") + " · " + p.variants + " colors · Ships from Amazon",
+          sub: p.variants + " colors · Ships from Amazon",
           cat: "", href: amazonUrl(p), alt: p.name, banner: false
         });
       });
@@ -228,13 +211,14 @@
   }
 
   /* ---------- nav ----------
-     导航结构：NEW ARRIVALS → BEST SELLERS → SALE(促销占位) → 全部分类。
-     SALE 暂未接入促销数据识别，先以灰色占位显示，后续支持后激活。 */
+     导航结构：NEW ARRIVALS → BEST SELLERS → 全部分类。 */
   function buildNav() {
     var html =
       '<a class="nav__link" data-anchor="section-new" href="#section-new">New Arrivals</a>' +
-      '<a class="nav__link" data-anchor="section-best" href="#section-best">Best Sellers</a>' +
-      '<a class="nav__link nav__link--sale" data-anchor="section-grid" href="#section-grid" title="Sale items coming soon">Sale</a>';
+      '<a class="nav__link" data-anchor="section-best" href="#section-best">Best Sellers</a>';
+    if (items.some(function (i) { return i.deal; })) {
+      html += '<a class="nav__link nav__link--deal" data-anchor="section-sale" href="#section-sale">Deals</a>';
+    }
     CATS.forEach(function (c) {
       html += '<a class="nav__link" data-cat="' + c + '" href="#section-grid">' + (NAV_LABELS[c] || c) + "</a>";
     });
@@ -249,6 +233,8 @@
         if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
         return;
       }
+      /* 分类链接：阻止默认锚点跳转，避免与平滑滚动冲突 */
+      e.preventDefault();
       setCat(l.dataset.cat || "");
     });
 
@@ -268,6 +254,8 @@
         if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
         return;
       }
+      /* 分类链接：阻止默认锚点跳转，避免与平滑滚动冲突 */
+      e.preventDefault();
       setCat(l.dataset.cat || "");
     });
   }
@@ -292,6 +280,15 @@
      结构与 prettygarden 首页的主题合集一致。 */
   var FEATURED_COLS = ["Dress", "Pants", "Jumpsuit", "Set"];
 
+  /* ---------- deals ----------
+     促销款由 data/sync_deals.js 从 lepunuodeals.com 同步打标；无促销款时区块整体隐藏 */
+  function buildSale() {
+    var list = bySales(items.filter(function (i) { return i.deal; }), 12);
+    if (!list.length) { saleSec.hidden = true; return; }
+    saleSec.hidden = false;
+    saleEl.innerHTML = list.map(function (i) { return card(i, null); }).join("");
+  }
+
   function buildCollections() {
     var wrap = document.getElementById("collections");
     var html = "";
@@ -313,10 +310,11 @@
   }
 
   /* ---------- reviews ---------- */
+  /* 品牌卖点文案（非顾客评价）：避免虚构"真实评论"的合规风险 */
   var REVIEWS = [
-    { t: "The fabric is soft and the fit is flattering. I've gotten so many compliments every time I wear it." },
-    { t: "Beautiful quality for the price. Washes well, keeps its shape, and shipping was fast through Amazon." },
-    { t: "True to size and so comfortable. This is my second order — will definitely buy more styles." }
+    { t: "Soft fabrics that keep their shape wash after wash — made for everyday wear." },
+    { t: "True-to-size fits with an easy, effortless silhouette you can dress up or down." },
+    { t: "Quality you can feel at a fair price, shipped fast through Amazon." }
   ];
 
   function buildReviews() {
@@ -327,12 +325,11 @@
       html +=
         '<div class="review">' +
           '<a class="review__imgwrap" href="' + amazonUrl(p) + '" target="_blank" rel="noopener nofollow">' +
-            '<img class="review__img" src="' + hiRes(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph imgph--review&quot;></div>\'">' +
+            '<img class="review__img" style="--z:' + zoomOf(p) + '" src="' + hiRes(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph imgph--review&quot;></div>\'">' +
           "</a>" +
           '<div class="review__body">' +
-            '<div class="review__stars">★★★★★</div>' +
             '<p class="review__text">"' + esc(r.t) + '"</p>' +
-            '<span class="review__author">' + esc(p.category) + " · Amazon review</span>" +
+            '<span class="review__author">' + esc(p.category) + " · Lepunuo style pick</span>" +
           "</div>" +
         "</div>";
     });
@@ -346,7 +343,7 @@
     pics.forEach(function (p) {
       html +=
         '<a class="ig__item" href="' + amazonUrl(p) + '" target="_blank" rel="noopener nofollow">' +
-          '<img src="' + hiRes(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
+          '<img src="' + hiRes(p.image) + '" alt="' + esc(p.name) + '" style="--z:' + zoomOf(p) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
           "<span>✦</span>" +
         "</a>";
     });
@@ -356,6 +353,14 @@
   /* ---------- grouped grid (by category) ---------- */
   function setCat(c) {
     var el = c ? document.getElementById("cat-" + c) : groupsEl;
+    /* 目标分组不存在（被当前搜索过滤掉了）→ 重置搜索后定位，避免点击无响应 */
+    if (!el && c && state.q) {
+      state.q = "";
+      searchEl.value = "";
+      renderSuggestions("");
+      renderGroups(false);
+      el = document.getElementById("cat-" + c);
+    }
     if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
   }
   var groupsEl = document.getElementById("catGroups");
@@ -395,7 +400,7 @@
       html +=
         '<div class="catgroup" id="cat-' + c + '">' +
           '<div class="catgroup__head">' +
-            '<h3 class="catgroup__title">' + (NAV_LABELS[c] || c) + '<span class="catgroup__count">' + list.length + "</span></h3>" +
+            '<h3 class="catgroup__title">' + (NAV_LABELS[c] || c) + "</h3>" +
             '<div class="carow__btns">' +
               '<button class="carow__btn" data-dir="prev" aria-label="Previous">‹</button>' +
               '<button class="carow__btn" data-dir="next" aria-label="Next">›</button>' +
@@ -413,7 +418,7 @@
   }
 
   /* ---------- search suggestions (predictive dropdown) ---------- */
-  /* 输入即出 Top 5 相关商品：小图 + 名称 + 价格/评分，点击跳亚马逊；
+  /* 输入即出 Top 5 相关商品：小图 + 名称 + 价格，点击跳亚马逊；
      尾部 "View all" 聚焦下方全量网格（此时已按关键词过滤） */
   function renderSuggestions(q) {
     if (!q) { sugEl.hidden = true; return; }
@@ -425,15 +430,11 @@
       var thumb = it.image
         ? '<img src="' + hiRes(it.image) + '" alt="" loading="lazy" onerror="this.onerror=null;this.style.visibility=\'hidden\';">'
         : "";
-      var info = it.price != null
-        ? "$" + it.price.toFixed(2) + (it.oldPrice != null && it.oldPrice > it.price ? " -" + salePct(it) + "%" : "")
-        : "On Amazon";
       return (
         '<a class="sug__item" href="' + amazonUrl(it) + '" target="_blank" rel="noopener nofollow">' +
           '<span class="sug__thumb">' + thumb + "</span>" +
           '<span class="sug__meta">' +
             '<span class="sug__name">' + esc(it.name) + "</span>" +
-            '<span class="sug__info">' + info + (it.rating != null ? " · ★ " + it.rating.toFixed(1) : "") + "</span>" +
           "</span>" +
         "</a>"
       );
@@ -518,21 +519,13 @@
     if (!w) window.location.href = a.href;
   });
 
-  /* ---------- newsletter ---------- */
-  var form = document.getElementById("newsForm");
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var email = document.getElementById("newsEmail").value.trim();
-    if (!email) return;
-    form.hidden = true;
-    document.getElementById("newsOk").hidden = false;
-  });
-
   /* ---------- init ---------- */
   initHero();
   initMenu();
   buildNav();
   initRows();
+  buildSale();
+  bindCarouselArrows(saleSec);
   buildCollections();
   bindCarouselArrows(document.getElementById("collections"));
   buildReviews();

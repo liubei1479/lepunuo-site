@@ -47,7 +47,7 @@ button { font-family: inherit; }
   animation: marquee 30s linear infinite;
 }
 .marquee__track span {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 2.5px;
   text-transform: uppercase;
@@ -185,9 +185,7 @@ button { font-family: inherit; }
   transition: color .2s, background .2s;
 }
 .nav__link:hover { color: var(--ink); background: var(--bg-soft); }
-/* SALE 促销入口：暂无促销数据，先占位灰显，接入促销识别后激活 */
-.nav__link--sale { color: var(--ink-3); cursor: default; }
-.nav__link--sale:hover { color: var(--ink-3); background: none; }
+.nav__link--deal { color: var(--sale); }
 
 /* ---------- Hero (full-bleed cinematic banner like prettygarden) ---------- */
 .hero {
@@ -265,7 +263,7 @@ button { font-family: inherit; }
   line-height: 1.6;
 }
 .hero__cap::after {
-  content: "Free U.S. Shipping Over $49 · Free 30-Day Returns";
+  content: "Secure Checkout on Amazon · Hassle-Free Returns";
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 1px;
@@ -337,6 +335,14 @@ button { font-family: inherit; }
   margin-top: 6px;
 }
 .block__more { margin-top: 26px; text-align: center; }
+.sale__note {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.sale__note a { color: var(--ink); font-weight: 600; text-decoration: underline; }
+.sale__note a:hover { color: var(--sale); }
 
 /* section head row: centered title + carousel arrows pinned right */
 .rowhead {
@@ -354,17 +360,20 @@ button { font-family: inherit; }
 }
 
 /* ---------- Product rows & cards ---------- */
-.card { display: flex; flex-direction: column; }
+.card { display: flex; flex-direction: column; background: var(--bg); }
 .card__imgwrap {
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  background: var(--bg-soft);
+  background: #fff; /* 与 Amazon 白底主图融合，避免 contain 后产生色差 */
   position: relative;
 }
 .card__img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* 完整展示原始商品图，避免裁掉全身照的头部/脚部 */
+  padding: 5%;
+  box-sizing: border-box;
+  transform: scale(var(--z, 1)); /* 主体大小归一：zoom 由构建期脚本按白底包围盒计算 */
   transition: transform .5s ease;
 }
 /* image placeholder fallback (image failed to load) */
@@ -398,7 +407,7 @@ button { font-family: inherit; }
 .imgph--hero { aspect-ratio: 3 / 4; }
 .imgph--review { aspect-ratio: 16 / 10; }
 .ig__item .imgph { aspect-ratio: auto; }
-.card:hover .card__img { transform: scale(1.05); }
+.card:hover .card__img { transform: scale(calc(var(--z, 1) * 1.05)); }
 .card__badge {
   position: absolute;
   top: 12px;
@@ -413,6 +422,7 @@ button { font-family: inherit; }
   padding: 6px 12px;
   border-radius: var(--radius);
 }
+.card__badge--deal { background: var(--sale); }
 .card__body {
   padding: 12px 6px 2px;
   display: flex;
@@ -423,7 +433,7 @@ button { font-family: inherit; }
   flex: 1;
 }
 .card__name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1.4;
   color: var(--ink-2);
@@ -432,57 +442,21 @@ button { font-family: inherit; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.card__row { display: flex; align-items: baseline; justify-content: center; gap: 10px; margin-top: 2px; }
-.card__price { font-size: 17px; font-weight: 700; letter-spacing: .3px; }
-.card__price small {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin-right: 4px;
-  vertical-align: 1px;
-}
-/* rating row + strikethrough price + discount (from card data) */
-.card__rating {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  font-size: 12.5px;
-  color: var(--ink-3);
-  margin-top: 1px;
-}
-.card__stars { font-size: 13px; letter-spacing: 1px; }
-.card__stars--full { color: #e8a33d; }
-.card__stars--empty { color: var(--line); }
-.card__rating b { color: var(--ink); font-weight: 700; }
-.card__rating i { font-style: normal; font-size: 11.5px; }
-.card__old {
-  color: var(--ink-3);
-  font-weight: 400;
-  font-size: 13px;
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-}
-.card__sale {
-  font-style: normal;
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: .5px;
-  color: var(--sale);
-}
+.card__row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 2px; }
+/* 价格数字已移除（Amazon 实时价与快照漂移），统一显示去 Amazon 确认价格的引导 */
 .card__cta {
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--ink);
-  opacity: 0;
-  transition: opacity .25s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.card:hover .card__cta { opacity: 1; }
+.card__cta::after { content: "↗"; font-size: 13px; transition: transform .2s; }
+.card:hover .card__cta { color: var(--sale); }
+.card:hover .card__cta::after { transform: translate(2px, -2px); }
 
 /* color swatches (like prettygarden "+N more") */
 .card__swatches {
@@ -532,7 +506,7 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -547,7 +521,7 @@ button { font-family: inherit; }
 }
 @media (max-width: 640px) {
   .trustbar__in { gap: 16px; }
-  .trustbar__item { font-size: 11px; letter-spacing: 1px; }
+  .trustbar__item { font-size: 12px; letter-spacing: 1px; }
 }
 
 /* ---------- Toolbar + grid ---------- */
@@ -592,17 +566,7 @@ button { font-family: inherit; }
   letter-spacing: 3px;
   text-transform: uppercase;
 }
-.catgroup__count {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  color: var(--ink-3);
-  background: var(--bg-soft);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 14px;
-  flex: 0 0 auto;
-}
+/* 分类数额已移除：个位数会削弱感知丰富度，仅保留顶部总计数 */
 .carow__btns { display: flex; gap: 8px; flex: 0 0 auto; }
 .carow__btn {
   width: 42px;
@@ -646,11 +610,10 @@ button { font-family: inherit; }
 /* ---------- Reviews ---------- */
 .reviews__in { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .review { background: var(--bg); border: 1px solid var(--line); display: flex; flex-direction: column; }
-.review__imgwrap { aspect-ratio: 16 / 10; overflow: hidden; }
-.review__img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-.review:hover .review__img { transform: scale(1.04); }
+.review__imgwrap { aspect-ratio: 16 / 10; overflow: hidden; background: #fff; }
+.review__img { width: 100%; height: 100%; object-fit: contain; transform: scale(var(--z, 1)); transition: transform .5s; }
+.review:hover .review__img { transform: scale(calc(var(--z, 1) * 1.04)); }
 .review__body { padding: 22px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
-.review__stars { font-size: 17px; letter-spacing: 3px; }
 .review__text { font-size: 16px; line-height: 1.65; color: var(--ink-2); flex: 1; font-style: italic; }
 .review__author { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-3); }
 @media (max-width: 900px) { .reviews__in { grid-template-columns: 1fr; } }
@@ -670,9 +633,9 @@ button { font-family: inherit; }
 }
 .ig__handle:hover { text-decoration: underline; }
 .ig__grid { margin-top: 26px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; }
-.ig__item { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--bg-soft); }
-.ig__item img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s, opacity .3s; }
-.ig__item:hover img { transform: scale(1.06); opacity: .85; }
+.ig__item { position: relative; aspect-ratio: 1; overflow: hidden; background: #fff; }
+.ig__item img { width: 100%; height: 100%; object-fit: contain; transform: scale(var(--z, 1)); transition: transform .5s, opacity .3s; }
+.ig__item:hover img { transform: scale(calc(var(--z, 1) * 1.06)); opacity: .85; }
 .ig__item span {
   position: absolute;
   inset: 0;
@@ -687,32 +650,17 @@ button { font-family: inherit; }
 }
 .ig__item:hover span { opacity: 1; }
 
-/* ---------- Newsletter ---------- */
-.news { background: var(--bg-soft); border-top: 1px solid var(--line); padding: 44px 28px; text-align: center; }
-.news__title {
-  font-size: clamp(26px, 3.2vw, 36px);
-  font-weight: 700;
-  letter-spacing: 4px;
-  text-transform: uppercase;
+/* ---------- Showcase disclaimer ---------- */
+.notice {
+  border-top: 2px solid var(--sand);
+  background: var(--bg-soft);
+  padding: 16px 28px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
 }
-.news__sub { margin-top: 10px; font-size: 16px; color: var(--ink-3); }
-.news__form {
-  margin: 26px auto 0;
-  max-width: 500px;
-  display: flex;
-  gap: 12px;
-}
-.news__input {
-  flex: 1;
-  padding: 14px 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fff;
-  font-size: 15px;
-  outline: none;
-}
-.news__input:focus { border-color: var(--ink); }
-.news__ok { margin-top: 16px; font-size: 16px; font-weight: 600; }
+.notice strong { color: var(--ink); font-weight: 700; }
 
 /* ---------- Footer (light) ---------- */
 .foot { background: var(--bg-soft); border-top: 1px solid var(--line); }
@@ -721,7 +669,7 @@ button { font-family: inherit; }
   margin: 0 auto;
   padding: 48px 28px 36px;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 40px;
 }
 .foot__brand {
@@ -745,7 +693,7 @@ button { font-family: inherit; }
   border-top: 1px solid var(--line);
   padding: 20px 28px;
   text-align: center;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--ink-3);
 }
 .foot__bar p + p { margin-top: 6px; }
@@ -785,7 +733,6 @@ button { font-family: inherit; }
   .block--alt { padding: 40px 16px 44px; }
   .ig { padding: 48px 0; }
   .brand__logo { font-size: 30px; letter-spacing: 4px; }
-  .news__form { flex-direction: column; }
   .foot__in { grid-template-columns: 1fr 1fr; }
   .trustbar__in { gap: 16px; }
   .trustbar__item { font-size: 11px; letter-spacing: 1px; }
