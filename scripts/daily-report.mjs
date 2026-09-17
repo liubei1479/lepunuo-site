@@ -123,5 +123,10 @@ if (WEBHOOK) {
     body: JSON.stringify(body),
   });
   console.log("\n[dingtalk] HTTP", r.status);
-  if (!r.ok) process.exit(1);
+  try {
+    const j = await r.json();
+    console.log("[dingtalk] errcode:", j.errcode, "| errmsg:", j.errmsg);
+    if (j.errcode && j.errcode !== 0) process.exitCode = 1;
+  } catch { /* response not json */ }
+  if (!r.ok) process.exitCode = 1;
 }
