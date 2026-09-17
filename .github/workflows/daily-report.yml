@@ -20,4 +20,6 @@ jobs:
         env:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
-        run: node scripts/daily-report.mjs
+        run: |
+          echo "diag webhook_len=${#DINGTALK_WEBHOOK} token_len=${#ADMIN_TOKEN}"
+          node scripts/daily-report.mjs
