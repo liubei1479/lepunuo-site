@@ -1,0 +1,59 @@
+name: Deals sync & deploy
+
+on:
+  schedule:
+    # 北京时间 09:00 / 21:00（UTC 01:00 / 13:00），促销更新后几小时内自动同步
+    - cron: "0 1 * * *"
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deals-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync deals from lepunuodeals.com
+        run: node data/sync_deals.js --online
+
+      - name: Commit data change (if any)
+        run: |
+          if ! git diff --quiet data/data.js; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/data.js
+            git commit -m "chore: sync deals from lepunuodeals.com [skip ci]"
+            git push
+            echo "CHANGED=true" >> "$GITHUB_ENV"
+          else
+            echo "CHANGED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ env.CHANGED == 'true' || github.event_name == 'workflow_dispatch' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@latest pages deploy . --project-name lepunuo
+
+      - name: Report
+        if: always()
+        run: |
+          if [ "${{ env.CHANGED }}" = "true" ]; then
+            echo "✅ Deals synced and site deployed."
+          else
+            echo "ℹ️ No active promo changes (sync ran, deals expired or unchanged)."
+          fi

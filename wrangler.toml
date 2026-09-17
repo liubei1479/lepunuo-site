@@ -1,0 +1,10 @@
+# LEPUNUO website — Cloudflare Pages config
+# 本地预览: npx wrangler pages dev . --binding LEPUNUO_ANALYTICS=<local-namespace>
+# 部署:    wrangler pages deploy . --project-name lepunuo
+name = "lepunuo"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "LEPUNUO_ANALYTICS"
+id = "b4d6ca26eb1742438a7a6ebd2ab05eef"

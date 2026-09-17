@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>LEPUNUO — Admin</title>
+<style>
+:root{--ink:#111;--mut:#777;--line:#e5e5e5;--bgsoft:#f7f7f7;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",system-ui,sans-serif;}
+body{background:var(--bgsoft);color:var(--ink);padding:24px;font-size:15px;}
+.wrap{max-width:1080px;margin:0 auto;}
+h1{font-size:22px;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.metric{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;}
+.metric .k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;}
+.metric .v{font-size:26px;font-weight:700;margin-top:6px;}
+.section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:20px;}
+.section h2{font-size:15px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0;}
+.bar .lbl{width:64px;font-size:12px;color:var(--mut);flex:0 0 auto;text-align:right;}
+.bar .track{flex:1;background:var(--bgsoft);height:14px;border-radius:3px;overflow:hidden;}
+.bar .fill{height:100%;background:#111;border-radius:3px;min-width:2px;}
+.bar .num{width:64px;font-size:12px;flex:0 0 auto;}
+.listrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.listrow:last-child{border-bottom:none;}
+.err{color:#c60808;font-size:13px;margin-top:4px;}
+.tokenrow{display:flex;gap:8px;margin-bottom:16px;}
+input[type=password]{flex:1;padding:10px 14px;border:1px solid var(--line);border-radius:8px;font-size:14px;}
+button{padding:10px 22px;border:none;border-radius:8px;background:#111;color:#fff;font-weight:600;cursor:pointer;}
+button:hover{opacity:.85;}
+.hint{font-size:12px;color:var(--mut);margin-top:8px;}
+@media(max-width:640px){body{padding:14px;} .bar .lbl{width:44px;} .bar .num{width:48px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>LEPUNUO · Admin</h1>
+  <div class="tokenrow">
+    <input type="password" id="tk" placeholder="Admin token" autocomplete="off">
+    <button id="loadBtn">Load</button>
+  </div>
+  <div class="hint">访问量 / 点击量 / 流量预警 · 数据保留 30 天，匿名统计。</div>
+  <div id="status" style="color:#c00808;margin:8px 0;font-size:13px;"></div>
+  <div id="panel" hidden>
+    <div class="cards">
+      <div class="metric"><div class="k">Today PV</div><div class="v" id="mPv">–</div></div>
+      <div class="metric"><div class="k">Today UV</div><div class="v" id="mUv">–</div></div>
+      <div class="metric"><div class="k">Today Clicks</div><div class="v" id="mClk">–</div></div>
+      <div class="metric"><div class="k">Errors Today</div><div class="v" id="mErr">–</div></div>
+    </div>
+
+    <div class="section">
+      <h2>Last 30 days · PV</h2>
+      <div id="series"></div>
+    </div>
+
+    <div class="section">
+      <h2>Today by hour · PV</h2>
+      <div id="hours"></div>
+    </div>
+
+    <div class="section">
+      <h2>Top pages (7d)</h2>
+      <div id="pages"></div>
+    </div>
+
+    <div class="section">
+      <h2>Clicks by category (7d)</h2>
+      <div id="cats"></div>
+    </div>
+
+    <div class="section">
+      <h2>Front-end errors (recent)</h2>
+      <div id="errs"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var TK = sessionStorage.getItem("lp_admin_tk") || "";
+  var panel = document.getElementById("panel");
+  var statusEl = document.getElementById("status");
+  if (TK) document.getElementById("tk").value = TK;
+
+  function bar(label, value, max){
+    var pct = max > 0 ? Math.round(value / max * 100) : 0;
+    var d = document.createElement("div");
+    d.className = "bar";
+    d.innerHTML = '<span class="lbl">' + label + '</span><span class="track"><span class="fill" style="width:' + pct + '%"></span></span><span class="num">' + value + '</span>';
+    return d;
+  }
+  function row(k, v){
+    var d = document.createElement("div");
+    d.className = "listrow";
+    var el = document.createElement("span");
+    el.textContent = k;
+    var el2 = document.createElement("span");
+    el2.textContent = v;
+    d.appendChild(el); d.appendChild(el2);
+    return d;
+  }
+
+  function load(){
+    statusEl.textContent = "";
+    var tk = document.getElementById("tk").value.trim();
+    if (!tk){ statusEl.textContent = "Please enter admin token."; return; }
+    fetch("/api/analytics", { headers: { Authorization: "Bearer " + tk } })
+      .then(function(r){ if (r.status === 401) throw new Error("unauthorized"); return r.json(); })
+      .then(function(d){
+        sessionStorage.setItem("lp_admin_tk", tk);
+        panel.hidden = false;
+        document.getElementById("mPv").textContent = d.today ? d.today.pv : 0;
+        document.getElementById("mUv").textContent = d.today ? d.today.uv : 0;
+        document.getElementById("mClk").textContent = d.today ? d.today.clicks : 0;
+        document.getElementById("mErr").textContent = d.today ? d.today.errors : 0;
+
+        var s = document.getElementById("series"); s.innerHTML = "";
+        var max = 1; d.series30.forEach(function(x){ if (x.pv > max) max = x.pv; });
+        d.series30.slice(-20).forEach(function(x){
+          s.appendChild(bar(x.date.slice(4), x.pv, max));
+        });
+
+        var h = document.getElementById("hours"); h.innerHTML = "";
+        var hmax = 1; d.hour24.forEach(function(x){ if (x.pv > hmax) hmax = x.pv; });
+        d.hour24.forEach(function(x){ if (x.pv > 0) h.appendChild(bar(String(x.hour).padStart(2,"0"), x.pv, hmax)); });
+
+        var pg = document.getElementById("pages"); pg.innerHTML = "";
+        d.topPaths.forEach(function(x){ pg.appendChild(row(x.path, x.pv)); });
+
+        var c = document.getElementById("cats"); c.innerHTML = "";
+        d.clickByCat.forEach(function(x){ c.appendChild(row(x.cat, x.clicks)); });
+
+        var er = document.getElementById("errs"); er.innerHTML = "";
+        if (d.errors && d.errors.recent && d.errors.recent.length){
+          d.errors.recent.slice(0, 10).forEach(function(m){
+            var p = document.createElement("div");
+            p.className = "err";
+            p.textContent = m;
+            er.appendChild(p);
+          });
+        } else {
+          er.textContent = "No errors recorded.";
+          er.className = "hint";
+        }
+      })
+      .catch(function(e){ statusEl.textContent = "Load failed: " + e.message; });
+  }
+
+  document.getElementById("loadBtn").addEventListener("click", load);
+  document.getElementById("tk").addEventListener("keydown", function(e){ if (e.key === "Enter") load(); });
+  if (TK) load();
+})();
+</script>
+</body>
+</html>

@@ -1,16 +1,35 @@
 /* data/sync_deals.js — 促销数据同步脚本
-   用法：node data/sync_deals.js
-   直接读取同项目 lepunuo-deals/data/deals.json（deal 站源数据），
-   过滤当前仍有效的促销（expiresAt > now），按 ASIN 去重，
-   以 款号→ASIN→名称词集 三级匹配主库 data.js 并写入 deal 字段；
-   促销过期后重跑脚本即可自动清除旧标记。
-   可通过环境变量 DEALS_JSON 覆盖数据文件路径。 */
+   用法：
+     node data/sync_deals.js                       # 读本地 lepunuo-deals/data/deals.json（开发环境）
+     node data/sync_deals.js --online              # 读线上 https://lepunuodeals.com/digest.json（CI 用）
+   - 数据源优先级：DEALS_JSON(env) > 本地 deals.json > 线上 digest.json(--online)
+   - 过滤当前仍有效（expiresAt > now），按 ASIN 去重
+   - 以 款号→ASIN→名称词集 三级匹配主库 data.js 并写入 deal 字段
+   - 促销过期后重跑脚本即可自动清除旧标记
+   依赖：Node 18+（内置 fetch）。 */
 
 const fs = require("fs");
 const path = require("path");
 
 const DATA = path.resolve(__dirname, "data.js");
-const DEALS_JSON = process.env.DEALS_JSON || path.resolve(__dirname, "../../lepunuo-deals/data/deals.json");
+const LOCAL_DEALS = process.env.DEALS_JSON || path.resolve(__dirname, "../../lepunuo-deals/data/deals.json");
+const ONLINE_DIGEST = "https://lepunuodeals.com/digest.json";
+const useOnline = process.argv.includes("--online") || !!process.env.DEALS_URL;
+
+async function loadDeals() {
+  if (useOnline) {
+    const url = process.env.DEALS_URL || ONLINE_DIGEST;
+    const res = await fetch(url, { headers: { "User-Agent": "lepuno-site-sync/1.0" } });
+    if (!res.ok) throw new Error("digest fetch failed: HTTP " + res.status);
+    return JSON.parse(await res.text());
+  }
+  if (!fs.existsSync(LOCAL_DEALS)) {
+    console.error("未找到本地 deal 数据:", LOCAL_DEALS);
+    console.error('可用 --online 读取线上 digest.json（CI/远程环境）');
+    process.exit(1);
+  }
+  return JSON.parse(fs.readFileSync(LOCAL_DEALS, "utf8"));
+}
 
 /* 从促销标题提取商品名（去掉 "53% off on " 前缀） */
 function dealTitleOf(title) {
@@ -42,36 +61,25 @@ function matchItem(item, asin, dealTitle) {
   return false;
 }
 
-function readJson(p) {
-  try {
-    return JSON.parse(fs.readFileSync(p, "utf8"));
-  } catch (e) {
-    console.error("读取失败:", p, "->", e.message);
-    process.exit(1);
-  }
+function pctOff(orig, sale) {
+  return orig > 0 ? Math.max(1, Math.round((1 - sale / orig) * 100)) + "%" : "";
 }
 
-function main() {
-  if (!fs.existsSync(DEALS_JSON)) {
-    console.error("未找到 deal 数据:", DEALS_JSON);
-    console.error("请确认 lepunuo-deals 项目存在于同目录，或用 DEALS_JSON 指定路径");
-    process.exit(1);
-  }
-  const all = readJson(DEALS_JSON);
+async function main() {
+  const all = await loadDeals();
   const now = new Date();
-
-  /* 过滤未过期 + ASIN 有效 + 按 ASIN 去重（同款每日多条只取一条） */
   const seen = new Set();
   const active = all.filter((d) => {
-    if (!d.expiresAt || !d.destinationUrl || seen.has(d.destinationUrl)) return false;
+    const rawUrl = d.productUrl || d.destinationUrl;
+    if (!d.expiresAt || !rawUrl || seen.has(rawUrl)) return false;
     if (new Date(d.expiresAt) <= now) return false;
-    const asin = (d.destinationUrl.match(/\/dp\/([A-Z0-9]{10})/) || [])[1];
+    const asin = (rawUrl.match(/\/dp\/([A-Z0-9]{10})/) || [])[1];
     if (!asin) return false;
-    seen.add(d.destinationUrl);
+    seen.add(rawUrl);
     return true;
   });
 
-  console.log("deal 源共", all.length, "条 | 当前有效促销:", active.length);
+  console.log("deal 数据", all.length, "条 | 当前有效促销:", active.length, useOnline ? "(线上 digest)" : "(本地)");
 
   let src = fs.readFileSync(DATA, "utf8");
   const mj = src.match(/^window\.SITE_DATA = (\{.*\});\s*$/s);
@@ -79,16 +87,17 @@ function main() {
 
   const markedItems = [], unmatched = [];
   active.forEach((d) => {
-    const asin = d.destinationUrl.match(/\/dp\/([A-Z0-9]{10})/)[1];
+    const rawUrl = d.productUrl || d.destinationUrl;
+    const asin = rawUrl.match(/\/dp\/([A-Z0-9]{10})/)[1];
     const name = dealTitleOf(d.title);
     const it = data.items.find((x) => matchItem(x, asin, name));
     if (!it) { unmatched.push({ asin, name: name.slice(0, 60) }); return; }
     it.deal = {
-      originalPrice: d.originalPrice,
-      salePrice: d.salePrice,
-      discountText: d.discountText,
-      promoCode: d.promoCode,
-      ends: (d.expiresAt || ""),
+      originalPrice: d.originalPrice != null ? d.originalPrice : undefined,
+      salePrice: d.salePrice != null ? d.salePrice : undefined,
+      discountText: d.discountText || pctOff(d.originalPrice, d.salePrice),
+      promoCode: d.promoCode || "",
+      ends: d.expiresAt || "",
     };
     markedItems.push(it);
   });
@@ -102,11 +111,11 @@ function main() {
 
   fs.writeFileSync(DATA, "window.SITE_DATA = " + JSON.stringify(data) + ";\n", "utf8");
   console.log("已打标:", markedItems.length, "| 过期清除:", cleared);
-  markedItems.forEach((it) => console.log("  ✓", it.style, it.deal.discountText + " off · code " + it.deal.promoCode + " · ends " + it.deal.ends));
+  markedItems.forEach((it) => console.log("  ✓", it.style, it.deal.discountText + " off · code " + it.deal.promoCode));
   if (unmatched.length) {
-    console.log("\n未匹配到主库商品（需补数据或核实 ASIN）:");
+    console.log("\n未匹配到主库商品:");
     unmatched.forEach((x) => console.log("  ✗", x.asin, x.name));
   }
 }
 
-main();
+main().catch((e) => { console.error("失败:", e.message); process.exit(1); });

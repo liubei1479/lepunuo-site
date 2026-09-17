@@ -99,7 +99,7 @@
     var swatches = swatchDots(it.variants);
     var swHtml = swatches ? '<div class="card__swatches">' + swatches + '</div>' : "";
     return (
-      '<a class="card" href="' + amazonUrl(it) + '" target="_blank" rel="noopener nofollow" title="' + esc(it.name) + '">' +
+      '<a class="card" data-cat="' + esc(it.category || "") + '" href="' + amazonUrl(it) + '" target="_blank" rel="noopener nofollow" title="' + esc(it.name) + '">' +
         '<div class="card__imgwrap">' +
           '<img class="card__img" style="--z:' + zoomOf(it) + '" src="' + hiRes(it.image) + '" alt="' + esc(it.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
           b +
