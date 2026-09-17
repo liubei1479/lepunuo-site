@@ -27,7 +27,7 @@ function pct(a, b) {
 
 function bar(n, max, w = 18) {
   if (!max) return "·".repeat(w);
-  const c = Math.max(1, Math.round((n / max) * w));
+  const c = Math.min(w, Math.max(0, Math.round((n / max) * w)));
   return "█".repeat(c) + "░".repeat(w - c);
 }
 
