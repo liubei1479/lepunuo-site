@@ -263,7 +263,7 @@ button { font-family: inherit; }
   line-height: 1.6;
 }
 .hero__cap::after {
-  content: "Secure Checkout on Amazon · Hassle-Free Returns";
+  content: "Secure Checkout on Amazon · Returns via Amazon";
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 1px;
