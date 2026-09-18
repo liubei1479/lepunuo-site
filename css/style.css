@@ -70,7 +70,7 @@ button { font-family: inherit; }
 .header__row {
   max-width: var(--wrap);
   margin: 0 auto;
-  padding: 16px 28px 8px;
+  padding: 16px 28px 10px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -88,7 +88,7 @@ button { font-family: inherit; }
 }
 .brand { justify-self: center; line-height: 1; }
 .brand__logo {
-  font-size: 34px;
+  font-size: 38px;
   font-weight: 700;
   letter-spacing: 6px;
 }
@@ -732,7 +732,7 @@ button { font-family: inherit; }
   .block { padding: 40px 16px 44px; }
   .block--alt { padding: 40px 16px 44px; }
   .ig { padding: 48px 0; }
-  .brand__logo { font-size: 30px; letter-spacing: 4px; }
+  .brand__logo { font-size: 32px; letter-spacing: 4px; }
   .foot__in { grid-template-columns: 1fr 1fr; }
   .trustbar__in { gap: 16px; }
   .trustbar__item { font-size: 11px; letter-spacing: 1px; }
