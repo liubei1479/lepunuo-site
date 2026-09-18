@@ -703,6 +703,9 @@ button { font-family: inherit; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
+  /* 移动/平板端轮播保留手动左右滑动，隐藏分页箭头（桌面端照常显示） */
+  .rowhead .carow__btns,
+  .catgroup__head .carow__btns { display: none; }
   .header__row { grid-template-columns: auto 1fr auto; gap: 10px; padding: 14px 16px 8px; }
   .menu-btn { display: block; }
   .search { display: none; }
@@ -723,9 +726,29 @@ button { font-family: inherit; }
   .ig__grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 640px) {
-  .hero__cap { text-align: center; align-items: center; gap: 12px; padding: 0 20px; }
+  /* 移动端 hero：降低高度、去掉左右渐变亮斑、字幕块全宽下移居中（桌面端保持原样） */
+  .hero { height: 72vh; min-height: 480px; }
+  .hero__veil {
+    background: linear-gradient(180deg, transparent 48%, rgba(255,255,255,.85) 80%, rgba(255,255,255,.97) 100%);
+  }
+  .hero__cap {
+    top: auto;
+    bottom: 10%;
+    left: 0;
+    right: 0;
+    transform: none;
+    width: 100%;
+    margin-left: 0;
+    padding: 0 16px;
+    text-align: center;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero__eyebrow { font-size: 12px; letter-spacing: 3px; }
   .hero__title { font-size: 28px; }
-  .hero__sub { font-size: 15px; }
+  .hero__sub { font-size: 14px; max-width: 100%; }
+  .hero__cap::after { font-size: 11.5px; }
+  .hero__cap .btn { padding: 11px 32px; font-size: 13px; }
   .carow { margin: 0; padding-left: 0; padding-right: 0; scroll-padding-left: 0; }
   .carow > .card { flex: 0 0 calc((100% - 16px) / 2); } /* 手机：每页正好 2 个 */
   .carow__btn { width: 36px; height: 36px; }
