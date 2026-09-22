@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /product/
+Disallow: /*/product/
+
+Sitemap: https://lepunuo.com/sitemap.xml
