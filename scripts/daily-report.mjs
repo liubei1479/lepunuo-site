@@ -101,8 +101,12 @@ const warnMd = warn.length
   ? "\n**预警**\n" + warn.map((w) => `> ${w}`).join("\n")
   : "\n**预警**：✅ 无异常";
 
+// 错误来源判定：本站脚本存为路径（/js/app.js），外部/扩展来源为完整 URL（含 ://）
+const isExternalErr = (line) => / @ [^\s]*:\/\//.test(line);
+
 const errMd = analytics && errorLine
-  ? "\n**最近前端错误**\n" + ((analytics.errors.recent || []).slice(0, 3).map((e) => `> ${e}`).join("\n"))
+  ? "\n**最近前端错误**\n" +
+    ((analytics.errors.recent || []).slice(0, 3).map((e) => `> ${e}${isExternalErr(e) ? "　⚠️ 非本站来源（扩展/内置浏览器注入）" : ""}`).join("\n"))
   : "";
 
 const text =

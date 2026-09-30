@@ -39,7 +39,15 @@ export interface ViewMeta {
 /** 埋点落库：PV + 页面维度 + 当日 UV（会话 uid）+ 可选点击分类 + 可选前端错误 */
 export async function recordView(
   env: Env,
-  opts: { path?: string; click?: string; uid?: string; err?: string }
+  opts: {
+    path?: string;
+    click?: string;
+    uid?: string;
+    err?: string;
+    src?: string;
+    ln?: string;
+    col?: string;
+  }
 ): Promise<ViewMeta> {
   const day = dateKey();
   const path = normalizePath(opts.path);
@@ -66,21 +74,39 @@ export async function recordView(
 
   if (opts.err) {
     await incr(env, `v:err:${day}`);
-    await recordErrSample(env, String(opts.err).slice(0, 160));
+    await recordErrSample(
+      env,
+      String(opts.err).slice(0, 160),
+      String(opts.src || "").slice(0, 100),
+      String(opts.ln || "").slice(0, 8),
+      String(opts.col || "").slice(0, 8)
+    );
   }
 
   return { uvNew };
 }
 
-/** 错误样例（保留最近 100 条） */
-async function recordErrSample(env: Env, msg: string): Promise<void> {
+/** 错误样例（保留最近 100 条；含来源 文件:行:列，便于定位本站/第三方） */
+async function recordErrSample(
+  env: Env,
+  msg: string,
+  src: string,
+  ln: string,
+  col: string
+): Promise<void> {
   const key = "v:errlist";
   let list: string[] = [];
   const raw = await env.LEPUNUO_ANALYTICS.get(key);
   if (raw) {
     try { list = JSON.parse(raw); } catch { list = []; }
   }
-  list.unshift(`${dateKey()} ${msg}`);
+  let line = `${dateKey()} ${msg}`;
+  if (src) {
+    line += ` @ ${src}`;
+    if (ln) line += `:${ln}`;
+    if (col) line += `:${col}`;
+  }
+  list.unshift(line.slice(0, 280));
   list = list.slice(0, 100);
   await env.LEPUNUO_ANALYTICS.put(key, JSON.stringify(list), { expirationTtl: TTL_30D });
 }

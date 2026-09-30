@@ -47,8 +47,24 @@
     beacon({ click: a.getAttribute("data-cat") || "other" });
   }, true);
 
-  /* 前端错误上报 */
+  /* 前端错误上报（附来源文件:行:列，便于区分本站脚本与第三方注入） */
   window.addEventListener("error", function (e) {
-    beacon({ err: (e.message || "js error").slice(0, 120) });
+    var src = "";
+    try {
+      var fn = String(e.filename || "");
+      if (fn) {
+        var origin = location.origin;
+        /* 本站脚本只留路径；外部/扩展来源保留完整 URL 以便追溯 */
+        var sameOrigin = fn === origin || fn.indexOf(origin + "/") === 0;
+        src = sameOrigin ? (fn.slice(origin.length) || "/") : fn;
+        if (src.length > 100) src = src.slice(0, 100);
+      }
+    } catch (x) { /* 静默 */ }
+    beacon({
+      err: (e.message || "js error").slice(0, 120),
+      src: src,
+      ln: e.lineno == null ? "" : e.lineno,
+      col: e.colno == null ? "" : e.colno
+    });
   });
 })();
