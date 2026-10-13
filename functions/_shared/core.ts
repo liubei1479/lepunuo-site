@@ -3,6 +3,8 @@ export interface Env {
   LEPUNUO_ANALYTICS: KVNamespace;
   /** 后台口令：wrangler pages secret put ADMIN_TOKEN --project-name lepunuo */
   ADMIN_TOKEN?: string;
+  /** 图表口令：/api/chart 用 query 参数鉴权（图片 URL 带不了 Authorization 头） */
+  CHART_TOKEN?: string;
 }
 
 export function json(data: unknown, status = 200): Response {
