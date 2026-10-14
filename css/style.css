@@ -262,6 +262,11 @@ button { font-family: inherit; }
   max-width: 460px;
   line-height: 1.6;
 }
+.hero__note {
+  font-size: 12px;
+  color: rgba(0,0,0,.55);
+  letter-spacing: .3px;
+}
 .hero__cap::after {
   content: "Secure Checkout on Amazon · Returns via Amazon";
   font-size: 13px;

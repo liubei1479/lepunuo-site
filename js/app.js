@@ -127,13 +127,14 @@
     return s || "New Style";
   }
 
-  /* 品牌 AI 场景大片（本地 assets/hero），优先作为首屏主视觉；
-     点击跳转到对应商品分类。素材缺失时 initHero 会回退 Amazon 商品图。 */
+  /* 品牌 AI 场景大片（本地 assets/hero），仅作首屏氛围图，并非实拍产品。
+     点击落点混合：货盘够厚的场景跳对应分类（承接转化），货盘薄/偏氛围的跳"全部商品"，
+     以降低"图中服装=本店某款商品"的暗示；素材缺失时 initHero 会回退 Amazon 商品图。 */
   var HERO_BANNERS = [
-    { img: "assets/hero/hero-1.png", eye: "Summer Edit · Dress", title: "Summer Dresses", sub: "Flowy silhouettes made for sun-soaked days.", cat: "Dress" },
-    { img: "assets/hero/hero-2.png", eye: "Resort Style · Jumpsuit", title: "Effortless Jumpsuits", sub: "One-and-done looks, from beach to brunch.", cat: "Jumpsuit" },
-    { img: "assets/hero/hero-4.png", eye: "City Day · Pants", title: "Wide-Leg Elegance", sub: "Elevated everyday pants with easy comfort.", cat: "Pants" },
-    { img: "assets/hero/hero-3.png", eye: "Vacay Ready · Top", title: "Light & Layered Tops", sub: "Breezy pieces to style your way.", cat: "Top" }
+    { img: "assets/hero/hero-fall-1.png", eye: "The Fall Edit", title: "Cozy Knit Layers", sub: "Soft layers for crisp autumn days.", cat: "" },
+    { img: "assets/hero/hero-fall-2.png", eye: "Layer Up", title: "Effortless Fall Sets", sub: "Matched knits, made to move.", cat: "Set" },
+    { img: "assets/hero/hero-fall-3.png", eye: "City Day", title: "Wide-Leg Tailoring", sub: "Elevated trousers with easy comfort.", cat: "Pants" },
+    { img: "assets/hero/hero-fall-4.png", eye: "Autumn Neutrals", title: "Warm Layered Tops", sub: "Earthy tones to style your way.", cat: "" }
   ];
 
   function initHero() {
@@ -173,6 +174,7 @@
               '<h1 class="hero__title">' + esc(s.title) + "</h1>" +
               '<p class="hero__sub">' + esc(s.sub) + "</p>" +
               '<span class="btn btn--light">Shop Now</span>' +
+              '<p class="hero__note">Styling shown for inspiration — shop the actual styles below.</p>' +
             "</div>" +
           "</a>" +
         "</div>";
