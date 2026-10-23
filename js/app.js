@@ -19,13 +19,13 @@
   var saleSec = document.getElementById("section-sale");
   var saleEl = document.getElementById("saleGoods");
 
-  var CATS = ["Dress", "Pants", "Top", "Skirt", "Jumpsuit", "Shorts", "Cardigan", "Set", "Jacket"];
+  var CATS = ["Dress", "Pants", "Top", "Skirt", "Jumpsuit", "Shorts", "Cardigan", "Set"];
 
   /* 分类名称复数映射（避免 Dress+"s"=Dresss 这类拼写错误） */
   var NAV_LABELS = {
     Dress: "Dresses", Pants: "Pants", Top: "Tops", Skirt: "Skirts",
     Jumpsuit: "Jumpsuits", Shorts: "Shorts", Cardigan: "Cardigans",
-    Set: "Sets", Jacket: "Jackets"
+    Set: "Sets"
   };
 
   var state = { q: "", sort: "featured", cat: "" };
