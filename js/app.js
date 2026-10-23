@@ -39,13 +39,16 @@
       .replace(/"/g, "&quot;");
   }
 
-  /* 亚马逊追踪 tag（可选）：留空则跳转不带 tag 参数。
-     注意：一旦启用 tag 即构成联盟推广，需同时在页脚恢复
-     "As an Amazon Associate we earn from qualifying purchases." 披露声明。 */
-  var AMZ_TAG = "";
+  /* 亚马逊归因参数（可选）。本站为品牌自营引流，不使用联盟 tag
+     （tag 会引入佣金与披露义务），改用 Amazon Attribution：
+     品牌备案卖家在 Amazon Attribution 后台建 campaign 后，会得到形如
+     "maas_adg_XXXXXXXXXXXXXXXX_afap_abs" 的 maas 值，填到下面即可。
+     留空则跳转不带归因参数，点击仍会被本站统计，但从亚马逊侧无法归因。 */
+  var AMZ_MAAS = "";
 
   function amazonUrl(it) {
-    var q = "?th=1&psc=1" + (AMZ_TAG ? "&tag=" + encodeURIComponent(AMZ_TAG) : "");
+    var q = "?th=1&psc=1";
+    if (AMZ_MAAS) q += "&maas=" + encodeURIComponent(AMZ_MAAS) + "&ref_=aa_maas&tag=maas";
     return "https://www.amazon.com/dp/" + it.asin + q;
   }
 

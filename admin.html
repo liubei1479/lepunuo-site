@@ -66,6 +66,16 @@ button:hover{opacity:.85;}
     </div>
 
     <div class="section">
+      <h2>Traffic sources (30d)</h2>
+      <div id="refs"></div>
+    </div>
+
+    <div class="section">
+      <h2>Countries (30d)</h2>
+      <div id="ctry"></div>
+    </div>
+
+    <div class="section">
       <h2>Clicks by category (7d)</h2>
       <div id="cats"></div>
     </div>
@@ -128,6 +138,16 @@ button:hover{opacity:.85;}
 
         var pg = document.getElementById("pages"); pg.innerHTML = "";
         d.topPaths.forEach(function(x){ pg.appendChild(row(x.path, x.pv)); });
+
+        var rf = document.getElementById("refs"); rf.innerHTML = "";
+        var topRefs = d.topRefs || [];
+        if (topRefs.length) topRefs.forEach(function(x){ rf.appendChild(row(x.ref, x.pv)); });
+        else { rf.className = "hint"; rf.textContent = "No data yet — 新数据从下一次访问开始记录。"; }
+
+        var ct = document.getElementById("ctry"); ct.innerHTML = "";
+        var topCtry = d.topCountries || [];
+        if (topCtry.length) topCtry.forEach(function(x){ ct.appendChild(row(x.country, x.pv)); });
+        else { ct.className = "hint"; ct.textContent = "No data yet — 新数据从下一次访问开始记录。"; }
 
         var c = document.getElementById("cats"); c.innerHTML = "";
         d.clickByCat.forEach(function(x){ c.appendChild(row(x.cat, x.clicks)); });

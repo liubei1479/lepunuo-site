@@ -32,11 +32,31 @@ export function normalizePath(raw: string): string {
   return p.slice(0, 100);
 }
 
+/** 来源归一化：utm_source / ref 参数值或 referrer 域名；空 → (direct) */
+export function normalizeRef(raw?: string): string {
+  const s = String(raw || "").trim().toLowerCase();
+  if (!s) return "(direct)";
+  const host = s.replace(/^https?:\/\//, "").split("/")[0].replace(/^www\./, "");
+  return host.slice(0, 60) || "(direct)";
+}
+
+/** 国家代码只接受两位字母，其余丢弃 */
+export function normalizeCountry(raw?: string): string {
+  return String(raw || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2);
+}
+
+/** 常见爬虫/无头浏览器 UA，命中则不计入统计 */
+const BOT_UA = /bot|crawler|spider|slurp|headless|phantom|puppeteer|playwright|lighthouse|pagespeed|curl\/|wget\/|python-requests|go-http-client|axios\/|facebookexternalhit|embedly|whatsapp|telegrambot|preview/i;
+
+export function isBotUA(ua?: string | null): boolean {
+  return BOT_UA.test(String(ua || ""));
+}
+
 export interface ViewMeta {
   uvNew: boolean;
 }
 
-/** 埋点落库：PV + 页面维度 + 当日 UV（会话 uid）+ 可选点击分类 + 可选前端错误 */
+/** 埋点落库：PV + 页面维度 + 来源 + 当日 UV（会话 uid）+ 可选点击分类 + 可选前端错误 */
 export async function recordView(
   env: Env,
   opts: {
@@ -47,16 +67,27 @@ export async function recordView(
     src?: string;
     ln?: string;
     col?: string;
+    ref?: string;
+    country?: string;
   }
 ): Promise<ViewMeta> {
   const day = dateKey();
-  const path = normalizePath(opts.path);
   const uid = String(opts.uid || "").slice(0, 40);
   const click = String(opts.click || "").slice(0, 40);
 
-  await incr(env, `v:pv:${day}`);
-  await incr(env, `v:pv:hour:${hourKey(Date.now())}`);
-  await incr(env, `v:pg:${day}:${encodeURIComponent(path)}`);
+  /* 只有带 path 的事件才算一次浏览；点击事件单独计数，
+     避免一次点击既记点击又白送一次 PV */
+  if (opts.path) {
+    const path = normalizePath(opts.path);
+    await incr(env, `v:pv:${day}`);
+    await incr(env, `v:pv:hour:${hourKey(Date.now())}`);
+    await incr(env, `v:pg:${day}:${encodeURIComponent(path)}`);
+    await incr(env, `v:ref:${day}:${encodeURIComponent(normalizeRef(opts.ref))}`);
+    const country = normalizeCountry(opts.country);
+    if (country.length === 2) {
+      await incr(env, `v:ctry:${day}:${country}`);
+    }
+  }
 
   let uvNew = false;
   if (uid) {
@@ -133,6 +164,8 @@ export interface Analytics {
   series30: { date: string; pv: number; uv: number; clicks: number }[];
   hour24: { hour: number; pv: number }[];
   topPaths: { path: string; pv: number }[];
+  topRefs: { ref: string; pv: number }[];
+  topCountries: { country: string; pv: number }[];
   clickByCat: { cat: string; clicks: number }[];
   errors: { todayCount: number; recent: string[] };
 }
@@ -140,6 +173,7 @@ export interface Analytics {
 export async function buildAnalytics(env: Env): Promise<Analytics> {
   const today = dateKey();
   const last30 = recentDates(30);
+  const last30Set = new Set(last30);
   const last7 = new Set(recentDates(7));
 
   const pvByDay: Record<string, number> = {};
@@ -186,6 +220,30 @@ export async function buildAnalytics(env: Env): Promise<Analytics> {
     .sort((a, b) => b.pv - a.pv)
     .slice(0, 10);
 
+  /* 流量来源与国家（30 天）：直接读 v:ref / v:ctry 键 */
+  const refMap: Record<string, number> = {};
+  for (const k of await scanKeys(env, "v:ref:")) {
+    const m = k.match(/^v:ref:(\d{8}):(.+)$/);
+    if (!m || !last30Set.has(m[1])) continue;
+    const ref = decodeURIComponent(m[2]);
+    refMap[ref] = (refMap[ref] || 0) + Number((await env.LEPUNUO_ANALYTICS.get(k)) || 0);
+  }
+  const topRefs = Object.entries(refMap)
+    .map(([ref, pv]) => ({ ref, pv }))
+    .sort((a, b) => b.pv - a.pv)
+    .slice(0, 8);
+
+  const ctryMap: Record<string, number> = {};
+  for (const k of await scanKeys(env, "v:ctry:")) {
+    const m = k.match(/^v:ctry:(\d{8}):([A-Z]{2})$/);
+    if (!m || !last30Set.has(m[1])) continue;
+    ctryMap[m[2]] = (ctryMap[m[2]] || 0) + Number((await env.LEPUNUO_ANALYTICS.get(k)) || 0);
+  }
+  const topCountries = Object.entries(ctryMap)
+    .map(([country, pv]) => ({ country, pv }))
+    .sort((a, b) => b.pv - a.pv)
+    .slice(0, 8);
+
   const todayPv = pvByDay[today] || 0;
   const clicksToday = Number((await env.LEPUNUO_ANALYTICS.get(`v:clk:${today}`)) || 0);
   const errorsToday = Number((await env.LEPUNUO_ANALYTICS.get(`v:err:${today}`)) || 0);
@@ -208,6 +266,8 @@ export async function buildAnalytics(env: Env): Promise<Analytics> {
     series30,
     hour24,
     topPaths,
+    topRefs,
+    topCountries,
     clickByCat,
     errors: { todayCount: errorsToday, recent: errRecent },
   };

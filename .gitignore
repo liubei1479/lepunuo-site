@@ -7,3 +7,6 @@ __pycache__/
 
 # Node (if any tooling is added later)
 node_modules/
+
+# 本地数据报告（含流量数据，不随站点发布）
+.reports/
