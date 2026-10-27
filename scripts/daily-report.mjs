@@ -89,16 +89,16 @@ const alertText = badHealth.length ? "⚠️ 巡检发现异常，请尽快处�
 
 let healthMd = "";
 for (const h of health) {
-  healthMd += `\n> ${h.name} ${h.ok && h.status === 200 ? "✅" : "❌ " + (h.status || h.err)}`;
+  healthMd += `\n- ${h.name} ${h.ok && h.status === 200 ? "✅" : "❌ " + (h.status || h.err)}`;
 }
 
-// 内嵌图表：需要 CHART_TOKEN（与后端 chart 端点一致）；缺失时自动省略图片
+// 图表链接：钉钉 markdown 不渲染 SVG 也不支持图片超链接，故用文字链接跳转浏览器查看
 let chartMd = "";
 const chartToken = process.env.CHART_TOKEN || "";
-if (chartToken) chartMd = `\n![LEPUNUO 流量图](${SITE}/api/chart?token=${encodeURIComponent(chartToken)})\n`;
+if (chartToken) chartMd = `\n[📊 查看流量图表](${SITE}/api/chart?token=${encodeURIComponent(chartToken)})\n`;
 
 const warnMd = warn.length
-  ? "\n**预警**\n" + warn.map((w) => `> ${w}`).join("\n")
+  ? "\n**预警**\n" + warn.map((w) => `- ${w}`).join("\n")
   : "\n**预警**：✅ 无异常";
 
 // 错误来源判定：本站脚本存为路径（/js/app.js），外部/扩展来源为完整 URL（含 ://）
@@ -106,7 +106,7 @@ const isExternalErr = (line) => / @ [^\s]*:\/\//.test(line);
 
 const errMd = analytics && errorLine
   ? "\n**最近前端错误**\n" +
-    ((analytics.errors.recent || []).slice(0, 3).map((e) => `> ${e}${isExternalErr(e) ? "　⚠️ 非本站来源（扩展/内置浏览器注入）" : ""}`).join("\n"))
+    ((analytics.errors.recent || []).slice(0, 3).map((e) => `- ${e}${isExternalErr(e) ? "　⚠️ 非本站来源（扩展/内置浏览器注入）" : ""}`).join("\n"))
   : "";
 
 const text =
@@ -118,7 +118,7 @@ const text =
   `\n\n**促销**：当前有效 ${dealsActive} 款` +
   warnMd +
   errMd +
-  `\n\n---\n🤖 *自动生成 · lepunuo-site*`;
+  `\n🤖 自动生成 · lepunuo-site`;
 
 console.log(text);
 
