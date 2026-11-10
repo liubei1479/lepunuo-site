@@ -274,9 +274,11 @@
   function initRows() {
     bestEl.innerHTML = bySales(items, 10).map(function (i) { return card(i, "Best Seller"); }).join("");
 
-    var sorted = items.slice().sort(function (a, b) { return (b.sales7 || 0) - (a.sales7 || 0); });
-    var fresh = sorted.filter(function (i) { return i.sales7 > 0; });
-    fresh = fresh.length >= 10 ? fresh : sorted;
+    /* New Arrivals 取"上架日期最新"的 10 款（launch 由领星开售日期回填），
+       不再按销量排：新款刚上架销量未起量，按销量会永远排在老款之后 */
+    var fresh = items
+      .filter(function (i) { return i.launch; })
+      .sort(function (a, b) { return a.launch < b.launch ? 1 : a.launch > b.launch ? -1 : 0; });
     newEl.innerHTML = fresh.slice(0, 10).map(function (i) { return card(i, "New"); }).join("");
   }
 
