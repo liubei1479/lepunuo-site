@@ -1,0 +1,66 @@
+name: Sales & new arrivals sync (Lingxing)
+
+on:
+  schedule:
+    # 北京时间每周一 10:30（UTC 周一 02:30）
+    - cron: "30 2 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lepunuo-data-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 只读调用领星：刷新近 30 天/近 7 天真实销量、校准上架日期、收录有图的新款。
+      # 脚本内部做了完整性/口径/覆盖率校验，任一不过就以非 0 退出，此时不会 commit、不会部署。
+      - name: Sync from Lingxing (read-only)
+        env:
+          LINGXING_MCP_KEY: ${{ secrets.LINGXING_MCP_KEY }}
+        run: node data/sync_lingxing.js --apply
+
+      - name: Validate data file
+        run: node -e "const fs=require('fs');const s=fs.readFileSync('data/data.js','utf8');const d=JSON.parse(s.match(/^window\.SITE_DATA = (\{.*\});\s*$/s)[1]);if(!d.items.length) process.exit(1);const bad=d.items.filter(i=>!i.style||!i.image||!i.category||!(i.sales30>=0));if(bad.length){console.error('字段异常:',bad.map(x=>x.style).join(','));process.exit(1)}console.log('items:',d.items.length)"
+
+      - name: Commit data change (if any)
+        run: |
+          if ! git diff --quiet data/data.js; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/data.js
+            git commit -m "chore: sync sales & new arrivals from Lingxing [skip ci]"
+            git pull --rebase --autostash origin main
+            git push
+            echo "CHANGED=true" >> "$GITHUB_ENV"
+          else
+            echo "CHANGED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ env.CHANGED == 'true' || github.event_name == 'workflow_dispatch' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@latest pages deploy . --project-name lepunuo --branch production
+
+      - name: Report
+        if: always()
+        run: |
+          if [ "${{ env.CHANGED }}" = "true" ]; then
+            echo "✅ Sales data synced and site deployed."
+          else
+            echo "ℹ️ Sync ran, no data change."
+          fi
