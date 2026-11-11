@@ -182,10 +182,10 @@
       var media = s.banner
         ? '<picture>' +
             '<source type="image/webp" srcset="' + s.img + '-sm.webp 900w, ' + s.img + '.webp 1672w" sizes="100vw">' +
-            '<img class="hero__bg" src="' + s.img + '.png" width="1672" height="941" alt="' + esc(s.alt) + '"' +
+            '<img class="hero__bg" src="' + s.img + '.png" width="1672" height="941" alt="' + esc(s.alt) + '" decoding="async"' +
               (first ? ' fetchpriority="high"' : ' loading="lazy"') + FALLBACK + ">" +
           "</picture>"
-        : '<img class="hero__bg" src="' + s.img + '" alt="' + esc(s.alt) + '"' +
+        : '<img class="hero__bg" src="' + s.img + '" alt="' + esc(s.alt) + '" decoding="async"' +
             (first ? ' fetchpriority="high"' : ' loading="lazy"') + FALLBACK + ">";
       html +=
         '<div class="hero__slide' + (idx === 0 ? " is-active" : "") + '">' +
@@ -232,6 +232,20 @@
       go(Number(d.dataset.idx));
       start();
     });
+    /* 首屏只在可见时自动轮播：整屏大图每 5 秒做一次交叉淡入，
+       滚到下面商品区后还在跑，会造成周期性的掉帧（手机尤其明显） */
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) {
+            if (!timer) start();
+          } else if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+        });
+      }).observe(wrap.closest(".hero") || wrap);
+    }
     start();
   }
 
@@ -515,6 +529,23 @@
     next.disabled = row.scrollLeft >= max - 2;
   }
 
+  /* content-visibility:auto 让离屏区块暂不排版，首次测量可能拿到 0 宽；
+     区块进入视口后补一次同步，避免箭头被误判成“整行不足一屏”而隐藏 */
+  var arrowIO = null;
+  function watchArrows(row, wrap) {
+    if (!("IntersectionObserver" in window)) return;
+    if (!arrowIO) {
+      arrowIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          var r = en.target.querySelector(".carow");
+          if (r) syncArrows(r, en.target);
+        });
+      }, { rootMargin: "240px" });
+    }
+    arrowIO.observe(wrap);
+  }
+
   function wrapCarousels(root) {
     var rows = (root || document).querySelectorAll(".carow");
     Array.prototype.forEach.call(rows, function (row) {
@@ -530,6 +561,7 @@
         '<button class="carow__btn carow__btn--side carow__btn--next" data-dir="next" aria-label="Scroll right">' + CHEV_R + "</button>"
       );
       syncArrows(row, wrap);
+      watchArrows(row, wrap);
       row.addEventListener("scroll", function () { syncArrows(row, wrap); }, { passive: true });
       window.addEventListener("resize", function () { syncArrows(row, wrap); });
     });
@@ -607,4 +639,18 @@
   };
   window.addEventListener("scroll", toggle, { passive: true });
   toggle();
+})();
+
+/* ---------- 跑马灯：不可见时暂停 ----------
+   两条跑马灯是无限循环动画，滚到页面中段后它们都在视口外，
+   却仍在驱动合成线程，白白占用 GPU，还会拖慢同一帧里的页面滚动。 */
+(function () {
+  var tracks = document.querySelectorAll(".marquee__track");
+  if (!tracks.length || !("IntersectionObserver" in window)) return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      en.target.classList.toggle("is-paused", !en.isIntersecting);
+    });
+  }, { rootMargin: "80px" });
+  Array.prototype.forEach.call(tracks, function (t) { io.observe(t); });
 })();
