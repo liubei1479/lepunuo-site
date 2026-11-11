@@ -57,6 +57,8 @@ button { font-family: inherit; }
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+/* 跑马灯离屏时由 app.js 暂停：无限循环动画会让合成线程一直空转 */
+.marquee__track.is-paused { animation-play-state: paused; }
 .marquee--foot { border-top: 1px solid #000; }
 
 /* ---------- Header ---------- */
@@ -329,6 +331,14 @@ button { font-family: inherit; }
 
 /* ---------- Sections ---------- */
 .block { max-width: var(--wrap); margin: 0 auto; padding: 40px 28px 44px; }
+
+/* 首页总高 1.1~1.5 万 px、180 张图：离屏的整块内容不排版也不绘制，
+   只用占位高度参与布局，滚动时省掉大量布局与光栅工作。
+   contain-intrinsic-size 的 auto 会记住真实高度，避免滚动条跳动。 */
+.block, .catgroup {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
+}
 .block--alt { background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); max-width: 100%; padding: 40px calc(50% - (var(--wrap) - 56px) / 2) 44px; }
 
 .sec__title {
@@ -631,10 +641,11 @@ button { font-family: inherit; }
   z-index: 3;
   width: 52px;
   height: 52px;
-  background: rgba(255, 255, 255, .94);
+  background: rgba(255, 255, 255, .96);
   border-color: rgba(0, 0, 0, .12);
   box-shadow: 0 3px 14px rgba(0, 0, 0, .16);
-  backdrop-filter: blur(6px);
+  /* 不用 backdrop-filter：全站 28 个圆钮，滚动时每个都要重新做一次背景模糊，
+     是 Windows/中低端手机上滚动掉帧的常见来源；96% 白底视觉上几乎一致 */
 }
 .carow__btn--prev { left: 8px; }
 .carow__btn--next { right: 8px; }
@@ -646,6 +657,8 @@ button { font-family: inherit; }
   /* 手机上每屏 2 张卡，滑动手势本身就能翻页；两侧箭头会盖住边缘商品图
      并抢走 40x40 的商品点击区，因此这一档直接隐藏，只保留滑动 + snap */
   .carow__btn--side { display: none; }
+  /* 手机上卡片更窄，占位高度与桌面不同，避免离屏区块首次渲染时高度差太大 */
+  .block, .catgroup { contain-intrinsic-size: auto 520px; }
 }
 
 /* horizontal scroll row */
