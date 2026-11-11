@@ -28,6 +28,9 @@ const PAGE = 200;          // 领星单页上限
 const MAX_PAGES = 300;     // 19676 条约 99 页，留足余量但防止死循环
 const NEW_WINDOW_DAYS = 30;   // 只收录最近 30 天内首次开售的款
 const MAX_NEW_PER_RUN = 10;   // 单次最多新增款数，防止异常时大量灌入
+/* 手工下线名单：男装等不应出现在女装站上的款号。
+   同步时永不被自动收录；若数据里已存在，也会被剔除，避免周更把下线的款加回来 */
+const EXCLUDE_STYLES = new Set(["LPN0997", "LPN0999"]);
 
 /* ---------- 致命错误：整批放弃 ---------- */
 function abort(msg) {
@@ -280,11 +283,19 @@ async function main() {
     }
   }
 
+  /* 8. 手工下线名单：从数据里剔除，且本轮不再参与统计 */
+  const removedHidden = items.filter((it) => EXCLUDE_STYLES.has(normStyle(it.style)));
+  if (removedHidden.length && APPLY) {
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (EXCLUDE_STYLES.has(normStyle(items[i].style))) items.splice(i, 1);
+    }
+  }
+
   /* 9. 发现新款：最近 30 天内首次开售、有主图、在售、分类可判定 */
   const known = new Set(items.map((x) => normStyle(x.style)));
   const cutoff = daysAgo(NEW_WINDOW_DAYS);
   const pool = [...agg.entries()]
-    .filter(([style, a]) => !known.has(style) && a.launch && a.launch >= cutoff && a.onSale)
+    .filter(([style, a]) => !EXCLUDE_STYLES.has(style) && !known.has(style) && a.launch && a.launch >= cutoff && a.onSale)
     .sort((x, y) => (x[1].launch < y[1].launch ? 1 : -1));   // 最新开售优先
 
   const newItems = [], skipped = [];
@@ -334,7 +345,11 @@ async function main() {
     if (skipped.length > 20) console.log(`   … 其余 ${skipped.length - 20} 个略`);
   }
 
-  if (!changedSales.length && !changedLaunch.length && !newItems.length) {
+  if (removedHidden.length) {
+    console.log(`手工下线 ${removedHidden.length} 个：${removedHidden.map((x) => x.style).join(", ")}`);
+  }
+
+  if (!changedSales.length && !changedLaunch.length && !newItems.length && !removedHidden.length) {
     console.log("\n无需变更，文件未修改。");
     return;
   }
