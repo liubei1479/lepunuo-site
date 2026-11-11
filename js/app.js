@@ -194,7 +194,7 @@
             '<div class="hero__veil"></div>' +
             '<div class="hero__cap">' +
               '<p class="hero__eyebrow">' + esc(s.eye) + "</p>" +
-              '<h1 class="hero__title">' + esc(s.title) + "</h1>" +
+              '<h2 class="hero__title">' + esc(s.title) + "</h2>" +
               '<p class="hero__sub">' + esc(s.sub) + "</p>" +
               '<span class="btn btn--light">Shop Now</span>' +
               '<p class="hero__note">Styling shown for inspiration — shop the actual styles below.</p>' +
