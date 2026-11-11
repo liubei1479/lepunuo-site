@@ -340,6 +340,39 @@ button { font-family: inherit; }
   margin-top: 6px;
 }
 .block__more { margin-top: 26px; text-align: center; }
+
+/* 首页 H1 导语 + 静态款名索引（SEO：不执行 JS 也能读到全部款式） */
+.sec__intro {
+  max-width: 720px;
+  margin: 14px auto 4px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.styleindex {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 28px 34px;
+  margin-top: 26px;
+}
+.styleindex__h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+.styleindex__h span { font-weight: 400; letter-spacing: 0; color: var(--ink-3); }
+.styleindex ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.styleindex a { font-size: 14px; color: var(--ink-2); }
+.styleindex a:hover { text-decoration: underline; }
+.styleindex__note { margin-top: 24px; text-align: center; font-size: 13px; color: var(--ink-3); }
 .sale__note {
   margin-top: 18px;
   text-align: center;
