@@ -24,6 +24,29 @@ const LABELS = {
   Jumpsuit: "Jumpsuits", Shorts: "Shorts", Cardigan: "Cardigans", Set: "Sets"
 };
 
+/* 分类落地页：/dresses/ /pants/ ... */
+const SLUGS = {
+  Dress: "dresses", Pants: "pants", Top: "tops", Skirt: "skirts",
+  Jumpsuit: "jumpsuits", Shorts: "shorts", Cardigan: "cardigans", Set: "sets"
+};
+
+const COPY = {
+  Dress: { h1: "Women's Dresses", lede: "Boho maxi, breezy tank and easy cover-up dresses — the pieces we reach for when the forecast is warm and plans are last-minute." },
+  Pants: { h1: "Women's Pants", lede: "Wide-leg, palazzo, cargo and capri trousers cut for comfort: elastic waists, deep pockets and fluid drape that works from desk to weekend." },
+  Top: { h1: "Women's Tops", lede: "Blouses, henleys, knit tees and cropped shirts — polished enough for the office, relaxed enough for everything after." },
+  Skirt: { h1: "Women's Skirts", lede: "Maxi, midi, mini and tiered ruffle skirts in flowy silhouettes, most of them with pockets and a comfortable elastic or smocked waist." },
+  Jumpsuit: { h1: "Women's Jumpsuits & Rompers", lede: "One-and-done outfits: wide-leg jumpsuits, smocked rompers and bib overalls that pack easily for vacation and everyday wear." },
+  Shorts: { h1: "Women's Shorts", lede: "High-waisted, wide-leg and cargo shorts with pockets — easy summer bottoms that pair with everything in your closet." },
+  Cardigan: { h1: "Women's Cardigans", lede: "Lightweight open-front cardigans and knit layers to throw over a tee or dress when the evening turns cool." },
+  Set: { h1: "Women's Matching Sets", lede: "Two-piece sets that take the guesswork out of getting dressed — tops matched to wide-leg pants, skirts or shorts." }
+};
+
+const TRUST = [
+  ["Sizing &amp; fit", "Every listing carries its own size chart and model measurements. If you sit between two sizes, the reviews on the Amazon page are the fastest way to judge the fit."],
+  ["Shipping &amp; returns", "Delivery estimates, shipping options and returns are handled by Amazon under the terms shown on each product page. Keep the order in your Amazon account for any return or exchange."],
+  ["Why we link to Amazon", "LEPUNUO is a product showcase, not a store. We do not take payments and never see your card details — every order is placed and fulfilled on Amazon.com."]
+];
+
 function esc(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -37,6 +60,116 @@ function amzUrl(it) {
 /* 统一尺寸的缩略图，避免索引区把原图全量拉一遍 */
 function thumb(url, w) {
   return /\._AC_SL\d+_\.jpg$/i.test(url) ? url.replace(/\._AC_SL\d+_\.jpg$/i, "._AC_SL" + w + "_.jpg") : url;
+}
+
+/* 原图（去掉尺寸后缀），作 <img> 加载失败时的兜底 */
+function orig(url) {
+  return String(url || "").replace(/\._AC_SL\d+_\.jpg$/i, ".jpg");
+}
+
+/* ---------- 分类落地页 ---------- */
+function catPage(cat, list, counts) {
+  const slug = SLUGS[cat];
+  const copy = COPY[cat];
+  const url = SITE + "/" + slug + "/";
+  const nav = CATS.filter((c) => SLUGS[c] && counts[c]).map((c) =>
+    '<a href="/' + SLUGS[c] + '/"' + (c === cat ? ' aria-current="page"' : "") + ">" + LABELS[c] + "</a>"
+  ).join("");
+
+  const cards = list.map((it) =>
+    '<a class="pcard" href="' + esc(amzUrl(it)) + '" target="_blank" rel="noopener nofollow">' +
+      '<div class="pcard__imgwrap"><img class="pcard__img" src="' + esc(thumb(it.image, 500)) + '"' +
+        ' srcset="' + esc(thumb(it.image, 500)) + " 500w, " + esc(thumb(it.image, 1000)) + ' 1000w"' +
+        ' sizes="(max-width: 700px) 45vw, 240px" width="300" height="400" alt="' + esc(it.name) + '"' +
+        ' loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + esc(orig(it.image)) + '\'">' +
+      "</div>" +
+      '<span class="pcard__name">' + esc(it.name) + "</span>" +
+      '<span class="pcard__cta">Check price on Amazon</span>' +
+    "</a>"
+  ).join("");
+
+  const ld = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": url + "#webpage",
+        url: url,
+        name: copy.h1 + " — LEPUNUO",
+        description: copy.lede,
+        isPartOf: { "@id": SITE + "/#website" },
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: list.length,
+          itemListElement: list.map((it, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: it.name,
+            url: amzUrl(it),
+            image: it.image ? thumb(it.image, 500) : undefined
+          }))
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE + "/" },
+          { "@type": "ListItem", position: 2, name: LABELS[cat], item: url }
+        ]
+      }
+    ]
+  };
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(copy.h1)} — LEPUNUO</title>
+<meta name="description" content="${esc(copy.lede)}">
+<link rel="canonical" href="${url}">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:title" content="${esc(copy.h1)} — LEPUNUO">
+<meta property="og:description" content="${esc(copy.lede)}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${url}">
+<meta property="og:site_name" content="LEPUNUO">
+<meta property="og:image" content="${SITE}/assets/og-cover.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/css/cats.css">
+<script type="application/ld+json">${JSON.stringify(ld)}</script>
+</head>
+<body>
+
+<header class="cathead">
+  <a class="cathead__brand" href="/">LEPUNUO</a>
+  <nav class="catnav">${nav}</nav>
+</header>
+
+<main class="catmain">
+  <h1>${esc(copy.h1)}</h1>
+  <p class="catmain__lede">${esc(copy.lede)}</p>
+  <p class="catmain__count">${list.length} styles · links open the Amazon listing</p>
+</main>
+
+<div class="pgrid">
+${cards}
+</div>
+
+<section class="trust">
+  <div class="trust__in">
+${TRUST.map(([t, p]) => '    <div class="trust__item"><h2>' + t + "</h2><p>" + p + "</p></div>" ).join("\n")}
+  </div>
+</section>
+
+<footer class="catfoot">
+  <p><strong>LEPUNUO is a product showcase, not an online store.</strong> We do not process payments or handle orders — every purchase is completed securely on Amazon.com.</p>
+  <p>Prices, sizes and availability are always confirmed on the Amazon product page. <a href="/">Browse all styles</a>.</p>
+</footer>
+
+</body>
+</html>
+`;
 }
 
 function replaceBetween(src, startMark, endMark, body, file) {
@@ -73,7 +206,7 @@ function main() {
   groups.forEach(([cat, list]) => {
     html +=
       '<div class="styleindex__col">' +
-        '<h3 class="styleindex__h">' + esc(LABELS[cat] || cat) + '<span>' + list.length + "</span></h3>" +
+        '<h3 class="styleindex__h"><a href="/' + SLUGS[cat] + '/">' + esc(LABELS[cat] || cat) + "</a><span>" + list.length + "</span></h3>" +
         "<ul>" +
         list.map((it) =>
           '<li><a href="' + esc(amzUrl(it)) + '" target="_blank" rel="noopener nofollow">' + esc(it.name) + "</a></li>"
@@ -149,13 +282,31 @@ function main() {
   );
   fs.writeFileSync(INDEX, idx, "utf8");
 
-  /* ---------- 3. sitemap lastmod ---------- */
-  let sm = fs.readFileSync(SITEMAP, "utf8");
+  /* ---------- 3. 分类落地页 ---------- */
+  const counts = {};
+  groups.forEach(([cat, list]) => { counts[cat] = list.length; });
+  groups.forEach(([cat, list]) => {
+    const dir = path.join(ROOT, SLUGS[cat]);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "index.html"), catPage(cat, list, counts), "utf8");
+  });
+
+  /* ---------- 4. sitemap ---------- */
   const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); // 北京时间
-  sm = sm.replace(/<lastmod>[^<]*<\/lastmod>/g, "<lastmod>" + today + "</lastmod>");
+  const urls = [{ loc: SITE + "/", freq: "daily", pri: "1.0" }].concat(
+    groups.map(([cat]) => ({ loc: SITE + "/" + SLUGS[cat] + "/", freq: "weekly", pri: "0.8" }))
+  );
+  const sm =
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls.map((u) =>
+      "  <url>\n    <loc>" + u.loc + "</loc>\n    <lastmod>" + today + "</lastmod>\n" +
+      "    <changefreq>" + u.freq + "</changefreq>\n    <priority>" + u.pri + "</priority>\n  </url>"
+    ).join("\n") +
+    "\n</urlset>\n";
   fs.writeFileSync(SITEMAP, sm, "utf8");
 
-  console.log(`静态索引已生成：${items.length} 个款号 / ${groups.length} 个分类，JSON-LD Top ${top.length}，sitemap lastmod=${today}`);
+  console.log(`静态索引已生成：${items.length} 个款号 / ${groups.length} 个分类页，JSON-LD Top ${top.length}，sitemap ${urls.length} 条，lastmod=${today}`);
 }
 
 main();
