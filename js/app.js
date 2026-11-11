@@ -60,6 +60,14 @@
     return url.replace(/\._AC_SL\d+_\.jpg$/i, ".jpg");
   }
 
+  /* Amazon 图片按长边取变体：卡片显示宽度仅 200–300px，没必要拉原图（实测 62KB vs 500px 的 13KB）。
+     非标准尺寸后缀的 URL 原样返回，由 onerror 兜底回退原图。 */
+  function imgW(url, w) {
+    return /\._AC_SL\d+_\.jpg$/i.test(url)
+      ? url.replace(/\._AC_SL\d+_\.jpg$/i, "._AC_SL" + w + "_.jpg")
+      : url;
+  }
+
   /* Est. 标注：价格为估算参考值，最终以亚马逊结算为准（合规用途） */
   /* 主体归一缩放系数：由构建期脚本(白底包围盒)写入 zoom 字段，缺省 1 */
   function zoomOf(it) {
@@ -104,7 +112,7 @@
     return (
       '<a class="card" data-cat="' + esc(it.category || "") + '" href="' + amazonUrl(it) + '" target="_blank" rel="noopener nofollow" title="' + esc(it.name) + '">' +
         '<div class="card__imgwrap">' +
-          '<img class="card__img" style="--z:' + zoomOf(it) + '" src="' + hiRes(it.image) + '" alt="' + esc(it.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
+          '<img class="card__img" style="--z:' + zoomOf(it) + '" src="' + imgW(it.image, 500) + '" srcset="' + imgW(it.image, 500) + ' 500w, ' + imgW(it.image, 1000) + ' 1000w" sizes="(max-width: 700px) 45vw, 300px" width="300" height="400" alt="' + esc(it.name) + '" loading="lazy" decoding="async" onerror="if(!this.dataset.f){this.dataset.f=1;this.removeAttribute(\'srcset\');this.src=\'' + hiRes(it.image) + '\'}else{this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'}">' +
           b +
         "</div>" +
         '<div class="card__body">' +
@@ -134,10 +142,10 @@
      点击落点混合：货盘够厚的场景跳对应分类（承接转化），货盘薄/偏氛围的跳"全部商品"，
      以降低"图中服装=本店某款商品"的暗示；素材缺失时 initHero 会回退 Amazon 商品图。 */
   var HERO_BANNERS = [
-    { img: "assets/hero/hero-fall-1.png", eye: "The Fall Edit", title: "Cozy Knit Layers", sub: "Soft layers for crisp autumn days.", cat: "" },
-    { img: "assets/hero/hero-fall-2.png", eye: "Layer Up", title: "Effortless Fall Sets", sub: "Matched knits, made to move.", cat: "Set" },
-    { img: "assets/hero/hero-fall-3.png", eye: "City Day", title: "Wide-Leg Tailoring", sub: "Elevated trousers with easy comfort.", cat: "Pants" },
-    { img: "assets/hero/hero-fall-4.png", eye: "Autumn Neutrals", title: "Warm Layered Tops", sub: "Earthy tones to style your way.", cat: "" }
+    { img: "assets/hero/hero-fall-1", eye: "The Fall Edit", title: "Cozy Knit Layers", sub: "Soft layers for crisp autumn days.", cat: "" },
+    { img: "assets/hero/hero-fall-2", eye: "Layer Up", title: "Effortless Fall Sets", sub: "Matched knits, made to move.", cat: "Set" },
+    { img: "assets/hero/hero-fall-3", eye: "City Day", title: "Wide-Leg Tailoring", sub: "Elevated trousers with easy comfort.", cat: "Pants" },
+    { img: "assets/hero/hero-fall-4", eye: "Autumn Neutrals", title: "Warm Layered Tops", sub: "Earthy tones to style your way.", cat: "" }
   ];
 
   function initHero() {
@@ -165,12 +173,24 @@
       });
     }
 
+    var FALLBACK = ' onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph imgph--hero&quot;></div>\'"';
+
     slides.forEach(function (s, idx) {
       var catAttr = s.cat ? ' data-cat="' + esc(s.cat) + '"' : "";
+      var first = idx === 0;
+      /* 品牌大片：WebP 双档（900/1672）+ 原 PNG 兜底；首张高优先级，其余懒加载 */
+      var media = s.banner
+        ? '<picture>' +
+            '<source type="image/webp" srcset="' + s.img + '-sm.webp 900w, ' + s.img + '.webp 1672w" sizes="100vw">' +
+            '<img class="hero__bg" src="' + s.img + '.png" width="1672" height="941" alt="' + esc(s.alt) + '"' +
+              (first ? ' fetchpriority="high"' : ' loading="lazy"') + FALLBACK + ">" +
+          "</picture>"
+        : '<img class="hero__bg" src="' + s.img + '" alt="' + esc(s.alt) + '"' +
+            (first ? ' fetchpriority="high"' : ' loading="lazy"') + FALLBACK + ">";
       html +=
         '<div class="hero__slide' + (idx === 0 ? " is-active" : "") + '">' +
           '<a class="hero__wall" href="' + s.href + '"' + (s.banner ? "" : ' target="_blank" rel="noopener nofollow"') + catAttr + ' title="' + esc(s.title) + '">' +
-            '<img class="hero__bg" src="' + s.img + '" alt="' + esc(s.alt) + '" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph imgph--hero&quot;></div>\'">' +
+            media +
             '<div class="hero__veil"></div>' +
             '<div class="hero__cap">' +
               '<p class="hero__eyebrow">' + esc(s.eye) + "</p>" +
@@ -332,7 +352,7 @@
       html +=
         '<div class="review">' +
           '<a class="review__imgwrap" href="' + amazonUrl(p) + '" target="_blank" rel="noopener nofollow">' +
-            '<img class="review__img" style="--z:' + zoomOf(p) + '" src="' + hiRes(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph imgph--review&quot;></div>\'">' +
+            '<img class="review__img" style="--z:' + zoomOf(p) + '" src="' + imgW(p.image, 500) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph imgph--review&quot;></div>\'">' +
           "</a>" +
           '<div class="review__body">' +
             '<p class="review__text">"' + esc(r.t) + '"</p>' +
@@ -350,7 +370,7 @@
     pics.forEach(function (p) {
       html +=
         '<a class="ig__item" href="' + amazonUrl(p) + '" target="_blank" rel="noopener nofollow">' +
-          '<img src="' + hiRes(p.image) + '" alt="' + esc(p.name) + '" style="--z:' + zoomOf(p) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
+          '<img src="' + imgW(p.image, 500) + '" alt="' + esc(p.name) + '" style="--z:' + zoomOf(p) + '" loading="lazy" onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;imgph&quot;></div>\'">' +
           "<span>✦</span>" +
         "</a>";
     });
@@ -435,7 +455,7 @@
     if (!list.length) { sugEl.hidden = true; return; }
     var html = list.map(function (it) {
       var thumb = it.image
-        ? '<img src="' + hiRes(it.image) + '" alt="" loading="lazy" onerror="this.onerror=null;this.style.visibility=\'hidden\';">'
+        ? '<img src="' + imgW(it.image, 500) + '" alt="" loading="lazy" onerror="this.onerror=null;this.style.visibility=\'hidden\';">'
         : "";
       return (
         '<a class="sug__item" href="' + amazonUrl(it) + '" target="_blank" rel="noopener nofollow">' +
