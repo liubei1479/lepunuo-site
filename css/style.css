@@ -808,7 +808,7 @@ button { font-family: inherit; }
   .hero__cap .btn { padding: 11px 32px; font-size: 13px; }
   .carow { margin: 0; padding-left: 0; padding-right: 0; scroll-padding-left: 0; }
   .carow > .card { flex: 0 0 calc((100% - 16px) / 2); } /* 手机：每页正好 2 个 */
-  .carow__btn { width: 36px; height: 36px; }
+  .carow__btn:not(.carow__btn--side) { width: 36px; height: 36px; } /* 两侧大钮尺寸由 720 断点单独控制 */
   .block { padding: 40px 16px 44px; }
   .block--alt { padding: 40px 16px 44px; }
   .ig { padding: 48px 0; }
