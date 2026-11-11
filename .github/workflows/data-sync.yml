@@ -67,3 +67,15 @@ jobs:
           else
             echo "ℹ️ Sync ran, no data change."
           fi
+
+      # 周更静默失败会让站点销量排序一直停在旧数据，推到钉钉群里才看得见
+      - name: Alert on failure (DingTalk)
+        if: failure()
+        env:
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+        run: |
+          if [ -z "$DINGTALK_WEBHOOK" ]; then echo "no webhook, skip"; exit 0; fi
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body=$(printf '{"msgtype":"markdown","markdown":{"title":"LEPUNO 数据同步失败","text":"#### LEPUNO 数据同步失败\\n\\n- 时间：%s UTC\\n- 影响：款名索引与 JSON-LD 未更新，站点仍为上周数据\\n- [查看日志](%s)"}}' "$(date -u '+%F %H:%M')" "$run_url")
+          curl -sS -X POST "$DINGTALK_WEBHOOK" -H 'Content-Type: application/json' -d "$body"
+          echo
