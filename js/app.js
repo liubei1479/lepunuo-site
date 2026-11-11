@@ -300,6 +300,8 @@
       .filter(function (i) { return i.launch; })
       .sort(function (a, b) { return a.launch < b.launch ? 1 : a.launch > b.launch ? -1 : 0; });
     newEl.innerHTML = fresh.slice(0, 10).map(function (i) { return card(i, "New"); }).join("");
+    wrapCarousels(document.getElementById("section-best"));
+    wrapCarousels(document.getElementById("section-new"));
   }
 
   /* ---------- featured collections ----------
@@ -314,6 +316,7 @@
     if (!list.length) { saleSec.hidden = true; return; }
     saleSec.hidden = false;
     saleEl.innerHTML = list.map(function (i) { return card(i, null); }).join("");
+    wrapCarousels(saleSec);
   }
 
   function buildCollections() {
@@ -326,14 +329,11 @@
       html +=
         '<div class="rowhead">' +
           '<h2 class="sec__title">' + esc(NAV_LABELS[c] || c) + "</h2>" +
-          '<div class="carow__btns" data-carousel="' + id + '">' +
-            '<button class="carow__btn" data-dir="prev" aria-label="Previous">‹</button>' +
-            '<button class="carow__btn" data-dir="next" aria-label="Next">›</button>' +
-          "</div>" +
         "</div>" +
         '<div id="' + id + '" class="carow">' + list.map(function (i) { return card(i); }).join("") + "</div>";
     });
     wrap.innerHTML = html;
+    wrapCarousels(wrap);
   }
 
   /* ---------- reviews ---------- */
@@ -428,10 +428,6 @@
         '<div class="catgroup" id="cat-' + c + '">' +
           '<div class="catgroup__head">' +
             '<h3 class="catgroup__title">' + (NAV_LABELS[c] || c) + "</h3>" +
-            '<div class="carow__btns">' +
-              '<button class="carow__btn" data-dir="prev" aria-label="Previous">‹</button>' +
-              '<button class="carow__btn" data-dir="next" aria-label="Next">›</button>' +
-            "</div>" +
           "</div>" +
           '<div class="carow">' +
             sortedList(list).map(function (i) { return card(i, null); }).join("") +
@@ -440,6 +436,7 @@
     });
     emptyEl.hidden = total > 0;
     groupsEl.innerHTML = html;
+    wrapCarousels(groupsEl);
     countEl.textContent = total + " style" + (total === 1 ? "" : "s") + " — shop all & checkout on Amazon";
     if (scroll) groupsEl.scrollIntoView({ block: "start", behavior: "smooth" });
   }
@@ -498,20 +495,50 @@
     }
   });
 
-  /* horizontal carousel arrows (event delegation): flip one full viewport per click.
-     适配两种结构：分类组(.catgroup，箭头在组头内) 与独立区块(.rowhead，箭头按 data-carousel 找行) */
+  /* ---------- 轮播两侧箭头 ----------
+     原先箭头缩在标题右上角（42px，离内容半屏远），点击成本高。
+     改为贴在轮播左右两侧的大圆钮：视觉上紧邻商品，滚到首/尾自动置灰，
+     整行不足一屏（不用翻页）时整组隐藏。 */
+  var CHEV_L = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  var CHEV_R = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+
+  function syncArrows(row, wrap) {
+    var prev = wrap.querySelector(".carow__btn--prev");
+    var next = wrap.querySelector(".carow__btn--next");
+    if (!prev || !next) return;
+    var max = row.scrollWidth - row.clientWidth;
+    wrap.classList.toggle("is-static", max < 8);
+    prev.disabled = row.scrollLeft <= 2;
+    next.disabled = row.scrollLeft >= max - 2;
+  }
+
+  function wrapCarousels(root) {
+    var rows = (root || document).querySelectorAll(".carow");
+    Array.prototype.forEach.call(rows, function (row) {
+      /* 幂等：renderGroups 会整块重绘，重绘后重新包一次即可 */
+      if (row.parentElement && row.parentElement.classList.contains("carowwrap")) return;
+      var wrap = document.createElement("div");
+      wrap.className = "carowwrap";
+      row.parentNode.insertBefore(wrap, row);
+      wrap.appendChild(row);
+      wrap.insertAdjacentHTML(
+        "beforeend",
+        '<button class="carow__btn carow__btn--side carow__btn--prev" data-dir="prev" aria-label="Scroll left">' + CHEV_L + "</button>" +
+        '<button class="carow__btn carow__btn--side carow__btn--next" data-dir="next" aria-label="Scroll right">' + CHEV_R + "</button>"
+      );
+      syncArrows(row, wrap);
+      row.addEventListener("scroll", function () { syncArrows(row, wrap); }, { passive: true });
+      window.addEventListener("resize", function () { syncArrows(row, wrap); });
+    });
+  }
+
+  /* 两侧箭头点击：从 .carowwrap 反查所属行，一次翻一屏 */
   function bindCarouselArrows(scopeEl) {
     scopeEl.addEventListener("click", function (e) {
       var btn = e.target.closest(".carow__btn");
       if (!btn) return;
-      var row = null;
-      var target = btn.closest(".carow__btns") && btn.closest(".carow__btns").dataset.carousel;
-      if (target) {
-        row = document.getElementById(target);
-      } else {
-        var group = btn.closest(".catgroup");
-        row = group && group.querySelector(".carow");
-      }
+      var wrapEl = btn.closest(".carowwrap");
+      var row = wrapEl && wrapEl.querySelector(".carow");
       if (!row) return;
       var dir = btn.dataset.dir === "next" ? 1 : -1;
       row.scrollBy({ left: dir * row.clientWidth, behavior: "smooth" });
