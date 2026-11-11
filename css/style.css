@@ -390,12 +390,6 @@ button { font-family: inherit; }
   justify-content: center;
   margin-bottom: 22px;
 }
-.rowhead .carow__btns {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
 
 /* ---------- Product rows & cards ---------- */
 .card { display: flex; flex-direction: column; background: var(--bg); }
@@ -605,7 +599,9 @@ button { font-family: inherit; }
   text-transform: uppercase;
 }
 /* 分类数额已移除：个位数会削弱感知丰富度，仅保留顶部总计数 */
-.carow__btns { display: flex; gap: 8px; flex: 0 0 auto; }
+
+/* 轮播两侧换页钮：原箭头在标题右上角（42px、离商品半屏远），改为紧贴内容两侧的大圆钮 */
+.carowwrap { position: relative; }
 .carow__btn {
   width: 42px;
   height: 42px;
@@ -619,9 +615,35 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .2s, color .2s, border-color .2s;
+  transition: background .2s, color .2s, border-color .2s, opacity .2s;
 }
 .carow__btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.carow__btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.carow__btn--side {
+  position: absolute;
+  top: 44%; /* 对齐商品图垂直中心：卡片下方还有名称与 CTA */
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, .94);
+  border-color: rgba(0, 0, 0, .12);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .16);
+  backdrop-filter: blur(6px);
+}
+.carow__btn--prev { left: 8px; }
+.carow__btn--next { right: 8px; }
+.carow__btn--side:disabled { opacity: .28; cursor: default; }
+.carow__btn--side:disabled:hover { background: rgba(255, 255, 255, .94); color: var(--ink); border-color: rgba(0, 0, 0, .12); }
+/* 整行不足一屏时不需要翻页，整组隐藏 */
+.carowwrap.is-static .carow__btn--side { display: none; }
+@media (max-width: 720px) {
+  /* 移动端卡片只有 45vw 宽，按钮相应缩小，仍保留可点区域 */
+  .carow__btn--side { width: 40px; height: 40px; }
+  .carow__btn--side svg { width: 16px; height: 16px; }
+  .carow__btn--prev { left: 4px; }
+  .carow__btn--next { right: 4px; }
+}
 
 /* horizontal scroll row */
 .carow {
@@ -741,9 +763,6 @@ button { font-family: inherit; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
-  /* 移动/平板端轮播保留手动左右滑动，隐藏分页箭头（桌面端照常显示） */
-  .rowhead .carow__btns,
-  .catgroup__head .carow__btns { display: none; }
   .header__row { grid-template-columns: auto 1fr auto; gap: 10px; padding: 14px 16px 8px; }
   .menu-btn { display: block; }
   .search { display: none; }
