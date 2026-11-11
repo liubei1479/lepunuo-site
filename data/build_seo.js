@@ -67,26 +67,79 @@ function orig(url) {
   return String(url || "").replace(/\._AC_SL\d+_\.jpg$/i, ".jpg");
 }
 
+/* 商品卡：分类页与 All Styles 页共用 */
+function pcard(it) {
+  return '<a class="pcard" href="' + esc(amzUrl(it)) + '" target="_blank" rel="noopener nofollow">' +
+    '<div class="pcard__imgwrap"><img class="pcard__img" src="' + esc(thumb(it.image, 500)) + '"' +
+      ' srcset="' + esc(thumb(it.image, 500)) + " 500w, " + esc(thumb(it.image, 1000)) + ' 1000w"' +
+      ' sizes="(max-width: 700px) 45vw, 240px" width="300" height="400" alt="' + esc(it.name) + '"' +
+      ' loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + esc(orig(it.image)) + '\'">' +
+    "</div>" +
+    '<span class="pcard__name">' + esc(it.name) + "</span>" +
+    '<span class="pcard__cta">Check price on Amazon</span>' +
+  "</a>";
+}
+
+/* 顶部导航：8 个分类 + All Styles */
+function navHtml(counts, activeSlug) {
+  const links = CATS.filter((c) => SLUGS[c] && counts[c]).map((c) =>
+    '<a href="/' + SLUGS[c] + '/"' + (SLUGS[c] === activeSlug ? ' aria-current="page"' : "") + ">" + LABELS[c] + "</a>"
+  );
+  links.push('<a href="/all-styles/"' + (activeSlug === "all-styles" ? ' aria-current="page"' : "") + ">All Styles</a>");
+  return links.join("");
+}
+
+/* 分类页 / All Styles 页共用的页面骨架（head + 导航 + 页脚） */
+function pageShell(o) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(o.title)}</title>
+<meta name="description" content="${esc(o.desc)}">
+<link rel="canonical" href="${o.url}">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:title" content="${esc(o.title)}">
+<meta property="og:description" content="${esc(o.desc)}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${o.url}">
+<meta property="og:site_name" content="LEPUNUO">
+<meta property="og:image" content="${SITE}/assets/og-cover.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/css/cats.css">
+<script type="application/ld+json">${JSON.stringify(o.ld)}</script>
+</head>
+<body>
+
+<header class="cathead">
+  <a class="cathead__brand" href="/">LEPUNUO</a>
+  <nav class="catnav">${o.nav}</nav>
+</header>
+
+<main class="catmain">
+  <h1>${esc(o.h1)}</h1>
+  <p class="catmain__lede">${esc(o.lede)}</p>
+  <p class="catmain__count">${o.countLine}</p>
+</main>
+${o.body}
+<footer class="catfoot">
+  <p><strong>LEPUNUO is a product showcase, not an online store.</strong> We do not process payments or handle orders — every purchase is completed securely on Amazon.com.</p>
+  <p>Prices, sizes and availability are always confirmed on the Amazon product page. <a href="/">Browse all styles</a>.</p>
+</footer>
+
+</body>
+</html>
+`;
+}
+
 /* ---------- 分类落地页 ---------- */
 function catPage(cat, list, counts) {
   const slug = SLUGS[cat];
   const copy = COPY[cat];
   const url = SITE + "/" + slug + "/";
-  const nav = CATS.filter((c) => SLUGS[c] && counts[c]).map((c) =>
-    '<a href="/' + SLUGS[c] + '/"' + (c === cat ? ' aria-current="page"' : "") + ">" + LABELS[c] + "</a>"
-  ).join("");
-
-  const cards = list.map((it) =>
-    '<a class="pcard" href="' + esc(amzUrl(it)) + '" target="_blank" rel="noopener nofollow">' +
-      '<div class="pcard__imgwrap"><img class="pcard__img" src="' + esc(thumb(it.image, 500)) + '"' +
-        ' srcset="' + esc(thumb(it.image, 500)) + " 500w, " + esc(thumb(it.image, 1000)) + ' 1000w"' +
-        ' sizes="(max-width: 700px) 45vw, 240px" width="300" height="400" alt="' + esc(it.name) + '"' +
-        ' loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + esc(orig(it.image)) + '\'">' +
-      "</div>" +
-      '<span class="pcard__name">' + esc(it.name) + "</span>" +
-      '<span class="pcard__cta">Check price on Amazon</span>' +
-    "</a>"
-  ).join("");
+  const nav = navHtml(counts, slug);
+  const cards = list.map(pcard).join("");
 
   const ld = {
     "@context": "https://schema.org",
@@ -120,56 +173,75 @@ function catPage(cat, list, counts) {
     ]
   };
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(copy.h1)} — LEPUNUO</title>
-<meta name="description" content="${esc(copy.lede)}">
-<link rel="canonical" href="${url}">
-<meta name="robots" content="index,follow,max-image-preview:large">
-<meta property="og:title" content="${esc(copy.h1)} — LEPUNUO">
-<meta property="og:description" content="${esc(copy.lede)}">
-<meta property="og:type" content="website">
-<meta property="og:url" content="${url}">
-<meta property="og:site_name" content="LEPUNUO">
-<meta property="og:image" content="${SITE}/assets/og-cover.jpg">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/css/cats.css">
-<script type="application/ld+json">${JSON.stringify(ld)}</script>
-</head>
-<body>
+  return pageShell({
+    title: copy.h1 + " — LEPUNUO",
+    desc: copy.lede,
+    url: url,
+    h1: copy.h1,
+    lede: copy.lede,
+    countLine: list.length + " styles · links open the Amazon listing",
+    nav: nav,
+    ld: ld,
+    body: '<div class="pgrid">\n' + cards + "\n</div>\n\n" +
+      '<section class="trust">\n  <div class="trust__in">\n' +
+      TRUST.map(([t, p]) => '    <div class="trust__item"><h2>' + t + "</h2><p>" + p + "</p></div>").join("\n") +
+      "\n  </div>\n</section>\n"
+  });
+}
 
-<header class="cathead">
-  <a class="cathead__brand" href="/">LEPUNUO</a>
-  <nav class="catnav">${nav}</nav>
-</header>
+/* ---------- All Styles 落地页：全部款号一页看完（首页只保留分类入口） ---------- */
+function allStylesPage(ordered, counts) {
+  const url = SITE + "/all-styles/";
+  const lede = "Every LEPUNUO style currently live on Amazon, grouped by category. Each card opens the listing for sizes, colors and the current price.";
+  const body =
+    '<div class="pgrid">\n' + ordered.map(pcard).join("\n") + "\n</div>\n\n" +
+    '<section class="trust">\n  <div class="trust__in">\n' +
+    TRUST.map(([t, p]) => '    <div class="trust__item"><h2>' + t + "</h2><p>" + p + "</p></div>").join("\n") +
+    "\n  </div>\n</section>\n";
 
-<main class="catmain">
-  <h1>${esc(copy.h1)}</h1>
-  <p class="catmain__lede">${esc(copy.lede)}</p>
-  <p class="catmain__count">${list.length} styles · links open the Amazon listing</p>
-</main>
+  const ld = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": url + "#webpage",
+        url: url,
+        name: "All LEPUNUO Styles",
+        description: lede,
+        isPartOf: { "@id": SITE + "/#website" },
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: ordered.length,
+          itemListElement: ordered.map((it, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: it.name,
+            url: amzUrl(it),
+            image: it.image ? thumb(it.image, 500) : undefined
+          }))
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE + "/" },
+          { "@type": "ListItem", position: 2, name: "All Styles", item: url }
+        ]
+      }
+    ]
+  };
 
-<div class="pgrid">
-${cards}
-</div>
-
-<section class="trust">
-  <div class="trust__in">
-${TRUST.map(([t, p]) => '    <div class="trust__item"><h2>' + t + "</h2><p>" + p + "</p></div>" ).join("\n")}
-  </div>
-</section>
-
-<footer class="catfoot">
-  <p><strong>LEPUNUO is a product showcase, not an online store.</strong> We do not process payments or handle orders — every purchase is completed securely on Amazon.com.</p>
-  <p>Prices, sizes and availability are always confirmed on the Amazon product page. <a href="/">Browse all styles</a>.</p>
-</footer>
-
-</body>
-</html>
-`;
+  return pageShell({
+    title: "All Styles — LEPUNUO",
+    desc: lede,
+    url: url,
+    h1: "All LEPUNUO Styles",
+    lede: lede,
+    countLine: ordered.length + " styles · links open the Amazon listing",
+    nav: navHtml(counts, "all-styles"),
+    ld: ld,
+    body: body
+  });
 }
 
 function replaceBetween(src, startMark, endMark, body, file) {
@@ -202,29 +274,17 @@ function main() {
   });
   items.forEach((it) => { if (CATS.indexOf(it.category) < 0) unknown.push(it); });
 
-  let html = '<div class="styleindex">';
+  /* 首页只放 8 个分类入口；112 个款名集中在 /all-styles/，避免首页出现大段文字墙 */
+  let html = '<div class="catlinks">';
   groups.forEach(([cat, list]) => {
     html +=
-      '<div class="styleindex__col">' +
-        '<h3 class="styleindex__h"><a href="/' + SLUGS[cat] + '/">' + esc(LABELS[cat] || cat) + "</a><span>" + list.length + "</span></h3>" +
-        "<ul>" +
-        list.map((it) =>
-          '<li><a href="' + esc(amzUrl(it)) + '" target="_blank" rel="noopener nofollow">' + esc(it.name) + "</a></li>"
-        ).join("") +
-        "</ul>" +
-      "</div>";
+      '<a class="catlinks__item" href="/' + SLUGS[cat] + '/">' +
+        esc(LABELS[cat] || cat) + "<span>" + list.length + "</span>" +
+      "</a>";
   });
-  if (unknown.length) {
-    html +=
-      '<div class="styleindex__col"><h3 class="styleindex__h">More<span>' + unknown.length + "</span></h3><ul>" +
-      unknown.map((it) =>
-        '<li><a href="' + esc(amzUrl(it)) + '" target="_blank" rel="noopener nofollow">' + esc(it.name) + "</a></li>"
-      ).join("") +
-      "</ul></div>";
-  }
   html += "</div>";
   html += '\n<p class="styleindex__note">' + items.length +
-    ' styles in total. Prices, sizes and availability are confirmed on each Amazon listing.</p>';
+    ' styles in total — <a href="/all-styles/">browse all styles</a>. Prices, sizes and availability are confirmed on each Amazon listing.</p>';
 
   let idx = fs.readFileSync(INDEX, "utf8");
   idx = replaceBetween(idx, "<!-- SEO:INDEX:START -->", "<!-- SEO:INDEX:END -->", html, "index.html");
@@ -291,10 +351,17 @@ function main() {
     fs.writeFileSync(path.join(dir, "index.html"), catPage(cat, list, counts), "utf8");
   });
 
+  /* All Styles 页：首页不再罗列全部款名，改由这一页承接 */
+  const ordered = groups.reduce((acc, [, list]) => acc.concat(list), []).concat(unknown);
+  const allDir = path.join(ROOT, "all-styles");
+  fs.mkdirSync(allDir, { recursive: true });
+  fs.writeFileSync(path.join(allDir, "index.html"), allStylesPage(ordered, counts), "utf8");
+
   /* ---------- 4. sitemap ---------- */
   const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); // 北京时间
   const urls = [{ loc: SITE + "/", freq: "daily", pri: "1.0" }].concat(
-    groups.map(([cat]) => ({ loc: SITE + "/" + SLUGS[cat] + "/", freq: "weekly", pri: "0.8" }))
+    groups.map(([cat]) => ({ loc: SITE + "/" + SLUGS[cat] + "/", freq: "weekly", pri: "0.8" })),
+    [{ loc: SITE + "/all-styles/", freq: "weekly", pri: "0.8" }]
   );
   const sm =
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
