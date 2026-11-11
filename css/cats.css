@@ -1,0 +1,90 @@
+/* 分类落地页样式（/dresses/ 等），独立于首页 style.css，便于爬虫首屏渲染 */
+
+:root {
+  --ink: #000000;
+  --ink-2: #333333;
+  --ink-3: #8a8a8a;
+  --line: #e5e5e5;
+  --bg: #ffffff;
+  --bg-soft: #f7f7f7;
+  --font: "Arimo", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --wrap: 1240px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* ---------- header ---------- */
+.cathead {
+  border-bottom: 1px solid var(--line);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.cathead__brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+}
+.catnav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-3); }
+.catnav a:hover { color: var(--ink); }
+.catnav a[aria-current="page"] { color: var(--ink); font-weight: 700; }
+
+/* ---------- intro ---------- */
+.catmain { max-width: var(--wrap); margin: 0 auto; padding: 44px 24px 10px; }
+.catmain h1 {
+  font-size: clamp(26px, 3.4vw, 40px);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.catmain__lede { max-width: 680px; margin-top: 14px; font-size: 15px; color: var(--ink-2); }
+.catmain__count { margin-top: 10px; font-size: 13px; color: var(--ink-3); }
+
+/* ---------- product grid ---------- */
+.pgrid {
+  max-width: var(--wrap);
+  margin: 26px auto 0;
+  padding: 0 24px 56px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 26px 20px;
+}
+.pcard { display: flex; flex-direction: column; gap: 10px; }
+.pcard__imgwrap { position: relative; overflow: hidden; background: var(--bg-soft); aspect-ratio: 3 / 4; }
+.pcard__img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.pcard:hover .pcard__img { transform: scale(1.03); }
+.pcard__name { font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+.pcard__cta { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--ink); align-self: flex-start; padding-bottom: 2px; }
+
+/* ---------- trust ---------- */
+.trust { background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.trust__in {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 44px 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 30px;
+}
+.trust__item h2 { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+.trust__item p { font-size: 14px; color: var(--ink-2); }
+
+/* ---------- footer ---------- */
+.catfoot { max-width: var(--wrap); margin: 0 auto; padding: 34px 24px 60px; font-size: 12.5px; color: var(--ink-3); }
+.catfoot p + p { margin-top: 10px; }
+.catfoot a { text-decoration: underline; }
