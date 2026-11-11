@@ -269,6 +269,7 @@
     ["Dress", "Pants", "Top", "Skirt", "Jumpsuit", "Set"].forEach(function (c) {
       f += '<a href="#section-grid" data-cat="' + c + '">' + (NAV_LABELS[c] || c) + "</a>";
     });
+    f += '<a href="/all-styles/">All Styles</a>';
     footNavEl.innerHTML = f;
     footNavEl.addEventListener("click", function (e) {
       var l = e.target.closest("a");
@@ -279,9 +280,11 @@
         if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
         return;
       }
+      /* All Styles 等普通链接走默认跳转 */
+      if (!l.dataset.cat) return;
       /* 分类链接：阻止默认锚点跳转，避免与平滑滚动冲突 */
       e.preventDefault();
-      setCat(l.dataset.cat || "");
+      setCat(l.dataset.cat);
     });
   }
 
