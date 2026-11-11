@@ -12,6 +12,8 @@
 <link rel="preconnect" href="https://m.media-amazon.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 首屏 banner 预加载：WebP 双档，避免 PNG 原图（约 2.3MB/张）拖慢 LCP -->
+<link rel="preload" as="image" type="image/webp" fetchpriority="high" href="assets/hero/hero-fall-1.webp" imagesrcset="assets/hero/hero-fall-1-sm.webp 900w, assets/hero/hero-fall-1.webp 1672w" imagesizes="100vw">
 <link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
